@@ -1,2 +1,2 @@
 # VetAppDjango
-Veterinary application for practioc use
+Veterinary application for practise use
