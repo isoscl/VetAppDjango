@@ -10,6 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.8/ref/settings/
 """
 
+#python3 manage.py migrate --run-syncdb
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 
@@ -39,7 +41,8 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'VetApp'
+    'VetApp',
+    'twitter_bootstrap',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -56,7 +59,7 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'VetAppDjango.urls'
 
 
-WSGI_APPLICATION = 'VetAppDjango.wsgi.application'
+# WSGI_APPLICATION = 'VetAppDjango.wsgi.application'
 
 
 # Database
@@ -68,7 +71,6 @@ DATABASES = {
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
-
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
@@ -83,6 +85,8 @@ USE_L10N = True
 
 USE_TZ = True
 
+DATE_FORMAT = ['%d %b %Y']
+DATE_INPUT_FORMATS = ['%d %b %Y']
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.8/howto/static-files/

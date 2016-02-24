@@ -11,7 +11,7 @@
     <title>VetApp net </title>
 
     <!-- Bootstrap core CSS -->
-    <link href="../static/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../static/bootstrap/css/bootstrap.css" rel="stylesheet">
     <link href="../static/bootstrap/css/dashboard.css" rel="stylesheet">
 
   </head>
@@ -33,14 +33,16 @@
           <ul class="nav navbar-nav">
           {% if user != None %}
             <li><a href="/newvisit">Uusi käynti</a></li>
-            <li><a href="/owners">Omistajat</a></li>
+            <li><a href="/owner">Omistajat</a></li>
             <li><a href="/settings">Asetukset</a></li>
           {% endif %}
             <li><a href="/help">Ohje</a></li>
 
-          </ul>
 
-         
+
+          </ul>
+          {% include "auth_form.html" %}
+
 
         </div>
       </div>
@@ -56,7 +58,7 @@
             {% block maincontent %}
             {% endblock %}
         </div>
-        
+
     </div>
 
     {% if alert_message != None %}
@@ -70,8 +72,8 @@
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
     <script src="../../static/bootstrap/js/bootstrap.min.js"></script>
-    <script src="../../static/bootstrap/js/docs.min.js"></script>
+    <!-- <script src="../../static/bootstrap/js/docs.min.js"></script> -->
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-    <script src="../../static/bootstrap/js/ie10-viewport-bug-workaround.js"></script>
+    <!-- <script src="../../static/bootstrap/js/ie10-viewport-bug-workaround.js"></script> -->
   </body>
 </html>

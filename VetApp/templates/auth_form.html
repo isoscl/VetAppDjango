@@ -1,0 +1,25 @@
+{% if user.is_authenticated %}
+    <form class="form-signin navbar-right navbar-form" method="POST">
+    {% csrf_token %}
+    {{auth_form}}
+	<input type="submit" class="btn btn-success" value="Log out">
+    </form>
+{% else %}
+    <div class="btn-group navbar-right">
+
+        <form class="form-signin navbar-right navbar-form" action="/register">
+            <button type="register" class="btn btn-primary">Register!</button>
+        </form>
+        <form class="form-signin navbar-right navbar-form" method="POST">
+            {% csrf_token %}
+            {{auth_form}}
+            <button type="submit" class="btn btn-success">Log in!</button>
+            {% if authenticationerror %}
+                <div class="alert alert-warning">
+                    <a href="#" class="close" data-dismiss="alert">&times;</a>
+                    <strong>Error!</strong> {{authenticationerror}}
+                </div>
+            {% endif %}
+        </form>
+    </div>
+{% endif %}
