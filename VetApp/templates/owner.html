@@ -1,7 +1,21 @@
 {% extends "site_base.html" %}
-    
+
 {% block maincontent %}
     <div>
         <h2> Omistaja </h2>
+        {% if owner_form.errors %}
+        <div class="alert alert-warning">
+            <a href="#" class="close" data-dismiss="alert">&times;</a>
+            {{owner_form.errors}}
+        </div>
+        {% endif %}
+
+        <form method="POST" form class="niceform">
+        {% csrf_token %}
+        <div class="form_group">
+        {{owner_form}}
+        </div>
+        <button class="btn btn-lg btn-primary " type="submit">Tallenna</button>
+        </form>
     </div>
 {% endblock %}

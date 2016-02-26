@@ -5,7 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm
 
 from VetApp.translate import g_login_text, g_form_labels, g_form_placeholders
 
-from VetApp.models import Sex, Color, Specie, Race, Animal
+from VetApp.models import Sex, Color, Specie, Race, Animal, Owner
 # g_login_text = {'username_placeholder':'Nimi','password_placeholder':'Salasana',
 #                 'username_text':'Käyttäjä', 'password_text':'Salasana'}
 
@@ -16,16 +16,39 @@ from VetApp.models import Sex, Color, Specie, Race, Animal
 #         return '''<a name="{name}" href="{url}">"{text}"</a>'''.format(name=name,url=url, text=text)
 
 
+# <div class="container">
+#     <div class="row" id="error-container">
+#          <div class="span12">
+#              <div class="alert alert-error"><button type="button" class="close" data-dismiss="alert">×</button>test error message</div>
+#            </div>
+#       	</div>
+#   	</div>
+
+#<dic class="alert alert-warning"><a href="#" class"close" data-dismiss="error">x</a><strong>%s</strong></div>
+
+from django.forms.utils import ErrorList
+class DivErrorList(ErrorList):
+    def __str__(self):              # __unicode__ on Python 2
+        return self.as_divs()
+    def as_divs(self):
+        if not self: return ''
+        #'<div class="form-group ">%s</div>'
+        return "" # '<input class="form-control" required>%s</input>'  % ''.join([self.errorhtml(e) for e in self])
+
+    def errorhtml(self, e):
+        return '' #<dic class="alert alert-warning"><a href="#" class"close" data-dismiss="error">x</a><strong>%s</strong></div>' % e
+
 class BaseForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(BaseForm, self).__init__(*args, **kwargs)
+        self.error_class=DivErrorList
         self.setForms()
 
     def setLabel(self, name, text=None):
         if not text:
             text = name
-        # print(name, self.fields[name].widget, self.fields[name].widget.__dict__)
-        if hasattr(self.fields[name].widget, 'format'):
+
+        if type(self.fields[name]) is forms.DateField :
             self.fields[name].widget.input_type = 'date'
 
         self.fields[name].label = g_form_labels[text]
@@ -43,13 +66,28 @@ class BaseForm(forms.ModelForm):
         pass
 
 
+
+class OwnerForm(BaseForm):
+    class Meta:
+        model= Owner
+        fields = ['name', 'address', 'phonenumber', 'email', 'other_info', 'archive']
+        widgets = {'name': forms.TextInput(attrs={'required': True,}),
+                    'email': forms.EmailInput()}
+
+    def __init__(self, *args, **kwargs):
+        super(OwnerForm, self).__init__(*args, **kwargs)
+        #self.setFields(**kwargs)
+        self.setModelFileds()
+
 class AnimalFrom(BaseForm):
     class Meta:
         model = Animal
         fields = ['name', 'official_name', 'birthday', 'micro_num',
         'rec_num', 'tattoo', 'insurance', 'passport', 'other_info',
         'death_day']
-        #widgets = {'birthday':forms.DateField(input_formats=[])}
+        widgets = {'name': forms.TextInput(attrs={'required': True,}),
+                    'insurance': forms.Textarea(attrs={'rows': 5,}),
+                    'other_info': forms.Textarea(attrs={'rows': 5}),}
 
     def __init__(self, *args, **kwargs):
         super(AnimalFrom, self).__init__(*args, **kwargs)

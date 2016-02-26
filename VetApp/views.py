@@ -4,7 +4,7 @@ from django.views.generic import View
 from django.http import Http404
 
 from VetApp.forms import AuthForm, RaceForm, SpecieForm, SexForm, ColorForm, AnimalFrom
-
+from VetApp.forms import OwnerForm
 
 # class SpecieView(BaseView):
 #     def _get(self):
@@ -75,6 +75,8 @@ class AnimalView(BaseView):
         self.context['animal_form'] = AnimalFrom(self.request.POST)
         if self.context['animal_form'].is_valid():
             print("Is valid")
+            self.context['animal_form'].save()
+
         else:
             #help(self.context['animal_form'])
             # for e in self.context['animal_form'].errors:
@@ -87,6 +89,17 @@ class AnimalView(BaseView):
 
 class OwnerView(BaseView):
     def _get(self):
+        self.context['owner_form'] = OwnerForm()
+        return render(self.request, 'owner.html', self.context)
+
+    def _post(self):
+        self.context['owner_form'] = OwnerForm(self.request.POST)
+        if self.context['owner_form'].is_valid():
+            print("Is valid")
+            self.context['owner_form'].save()
+        else:
+            print("Error")
+        print(self.request.POST)
         return render(self.request, 'owner.html', self.context)
 
 # @login_required(login_url='/')
