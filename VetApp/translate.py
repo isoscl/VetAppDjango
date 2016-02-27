@@ -1,4 +1,6 @@
 
+g_count_type = {'default':'kpl'}
+
 g_login_text = {'username_placeholder':'Nimi','password_placeholder':'Salasana',
                 'username_text':'Käyttäjä', 'password_text':'Salasana'}
 
@@ -9,7 +11,9 @@ g_form_labels = {'sex':'Sukupuoli', 'color':'Väri', 'specie':'Laji',
                 'insurance':'Vakuutus', 'passport':'Passi',
                 'other_info':'Muuta', 'death_day':'Kuolinpäivä',
                 'address':'Osoite', 'phonenumber':'Puhelinnumero',
-                'email':'Sähköposti', 'archive':'Arkistoi'}
+                'email':'Sähköposti', 'archive':'Arkistoi',
+                'post_office':'Postitoimipaikka', 'postnumber':'Postinumero',
+                'select':'Valitse'}
 
 
 g_form_placeholders = {'sex':'Sukupuoli', 'color':'Väri', 'specie':'Laji',
@@ -19,4 +23,5 @@ g_form_placeholders = {'sex':'Sukupuoli', 'color':'Väri', 'specie':'Laji',
                        'insurance':'Vakuutus', 'passport':'Passi',
                        'other_info':'Muuta', 'death_day':'Kuolinpäivä',
                        'address':'Osoite', 'phonenumber':'Puhelinnumero',
-                       'email':'Sähköposti', 'archive':'Arkistoi'}
+                       'email':'Sähköposti', 'archive':'Arkistoi',
+                       'post_office':'Postitoimipaikka', 'postnumber':'Postinumero'}

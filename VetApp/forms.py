@@ -5,7 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm
 
 from VetApp.translate import g_login_text, g_form_labels, g_form_placeholders
 
-from VetApp.models import Sex, Color, Specie, Race, Animal, Owner
+from VetApp.models import Sex, Color, Specie, Race, Animal, Owner, PostOffice
 # g_login_text = {'username_placeholder':'Nimi','password_placeholder':'Salasana',
 #                 'username_text':'Käyttäjä', 'password_text':'Salasana'}
 
@@ -38,6 +38,13 @@ class DivErrorList(ErrorList):
     def errorhtml(self, e):
         return '' #<dic class="alert alert-warning"><a href="#" class"close" data-dismiss="error">x</a><strong>%s</strong></div>' % e
 
+class MyModelChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        if not obj:
+            return 'Tyhjä'
+        else:
+            return  obj.toString() #"%s, %s" % (obj.name, obj.number)
+
 class BaseForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(BaseForm, self).__init__(*args, **kwargs)
@@ -54,9 +61,7 @@ class BaseForm(forms.ModelForm):
         self.fields[name].label = g_form_labels[text]
         self.fields[name].widget.attrs.update({'class':'form-control','placeholder':g_form_placeholders[name]})
 
-    def setModelChoiceField(self,field, queryset, required=False):
-        self.fields[field]=forms.ModelChoiceField(queryset=queryset, required=required)
-        self.setLabel(field)
+
 
     def setModelFileds(self):
         for field in self.Meta().fields:
@@ -65,6 +70,36 @@ class BaseForm(forms.ModelForm):
     def setForms(self):
         pass
 
+    def setChoiceField(self, class_obj, name=None):
+        self.setModelChoiceField(class_obj.getText(),
+        class_obj.objects.all())
+        #0=list number 1=str in choice
+        if name:
+            tmp_object= class_obj.objects.get(name=name)
+            for choice in self.fields[class_obj.getText()].choices:
+                if choice[1] == tmp_object.toString():
+                    self.fields[class_obj.getText()].initial = choice[0]
+                    break;
+
+
+    def setModelChoiceField(self,field, queryset, required=False):
+        self.fields[field]=MyModelChoiceField(queryset=queryset, required=required,
+        empty_label=g_form_labels['select'])
+        self.setLabel(field)
+
+    def setPosOffice(self, name=None, number=None):
+        self.fields['post_office']=MyModelChoiceField(
+        queryset=PostOffice.objects.all(), required=False,
+        empty_label=g_form_labels['select'])
+
+        if name and number:
+            po = PostOffice.objects.get(name=name, number=number)
+
+            for c in self.fields['post_office'].choices:
+                if c[1] == po.toString():
+                    self.fields['post_office'].initial = c[0]
+                    break;
+        self.setLabel('post_office')
 
 
 class OwnerForm(BaseForm):
@@ -78,6 +113,9 @@ class OwnerForm(BaseForm):
         super(OwnerForm, self).__init__(*args, **kwargs)
         #self.setFields(**kwargs)
         self.setModelFileds()
+        self.setPosOffice() #self.setPosOffice("Hamina", '12345')
+
+        #PostOffice(name='Kotka', number=49990).save()
 
 class AnimalFrom(BaseForm):
     class Meta:
@@ -94,16 +132,27 @@ class AnimalFrom(BaseForm):
         self.setFields(**kwargs)
         self.setModelFileds()
 
+        # Color(name='Musta').save()
+        # Sex(name='Uros').save()
+        # s = Specie(name='Koira')
+        # s.save()
+        # Race(name='Russeli', specie=s).save()
+
+
     def setFields(self, **kwargs):
         specie = kwargs.pop('specie','')
         sex = kwargs.pop('sex','')
         race = kwargs.pop('race','')
         color = kwargs.pop('color','')
-        self.setModelChoiceField('specie', Specie.objects.filter(name=specie))
-        self.setModelChoiceField('sex', Sex.objects.filter(name=sex))
-        self.setModelChoiceField('race', Race.objects.filter(name=race))
-        self.setModelChoiceField('color', Color.objects.filter(name=color))
+        self.setChoiceField(Specie, name=specie)
+        self.setChoiceField(Sex, name=sex)
+        self.setChoiceField(Race, name=race)
+        self.setChoiceField(Color, name=color)
 
+        # po = PostOffice(name='Kotka',number='12345')
+        # po.save()
+        # po = PostOffice(name='Kouvola',number='12345')
+        # po.save()
 
 
 class SexForm(BaseForm):

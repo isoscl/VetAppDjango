@@ -4,7 +4,10 @@ from django.views.generic import View
 from django.http import Http404
 
 from VetApp.forms import AuthForm, RaceForm, SpecieForm, SexForm, ColorForm, AnimalFrom
-from VetApp.forms import OwnerForm
+from VetApp.forms import OwnerForm, MyModelChoiceField
+from VetApp.models import Animal
+
+from VetApp import models
 
 # class SpecieView(BaseView):
 #     def _get(self):
@@ -55,6 +58,17 @@ class BaseView(View):
         print("Error")
         raise Http404("BaseView used! Even it should not")
 
+    def validate_form(self, form):
+        if form.is_valid():
+            print("Is valid")
+            obj = form.Meta.model()
+            for label_name in form.cleaned_data:
+                setattr(obj, label_name, form.cleaned_data[label_name])
+            obj.save()
+            return True
+        else:
+            print("Error")
+            return False
 
 
 
@@ -65,27 +79,14 @@ class IndexView(BaseView):
 class AnimalView(BaseView):
     def _get(self):
         self.context['animal_form'] = AnimalFrom()
-        # self.context['specie_form'] = SpecieForm()
-        # self.context['sex_form'] = SexForm()
-        # self.context['color_form'] = ColorForm()
-        # self.context['race_form'] = RaceForm()
         return render(self.request, 'animal.html', self.context)
 
     def _post(self):
         self.context['animal_form'] = AnimalFrom(self.request.POST)
-        if self.context['animal_form'].is_valid():
-            print("Is valid")
-            self.context['animal_form'].save()
-
+        if self.validate_form(self.context['animal_form']):
+            return render(self.request, 'animal.html', self.context)
         else:
-            #help(self.context['animal_form'])
-            # for e in self.context['animal_form'].errors:
-                # help(self.context['animal_form'].errors[e])
-            # help(self.context['animal_form'].errors)
-            print("Error")
-            # self.Alert(form.errors)
-        print(self.request.POST)
-        return render(self.request, 'animal.html', self.context)
+            return render(self.request, 'animal.html', self.context)
 
 class OwnerView(BaseView):
     def _get(self):
@@ -94,13 +95,11 @@ class OwnerView(BaseView):
 
     def _post(self):
         self.context['owner_form'] = OwnerForm(self.request.POST)
-        if self.context['owner_form'].is_valid():
-            print("Is valid")
-            self.context['owner_form'].save()
+        if self.validate_form(self.context['owner_form']):
+            return render(self.request, 'owner.html', self.context)
         else:
-            print("Error")
-        print(self.request.POST)
-        return render(self.request, 'owner.html', self.context)
+            return render(self.request, 'owner.html', self.context)
+
 
 # @login_required(login_url='/')
 # class AnimalView(BaseView):
