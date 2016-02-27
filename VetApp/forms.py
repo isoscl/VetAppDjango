@@ -31,7 +31,8 @@ class BaseForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(BaseForm, self).__init__(*args, **kwargs)
         self.error_class=DivErrorList
-        self.setForms()
+        self.setFields(**kwargs)
+        self.setModelFileds()
 
     def setLabel(self, name, text=None):
         if not text:
@@ -43,46 +44,46 @@ class BaseForm(forms.ModelForm):
         self.fields[name].label = g_form_labels[text]
         self.fields[name].widget.attrs.update({'class':'form-control','placeholder':g_form_placeholders[name]})
 
-
-
     def setModelFileds(self):
         for field in self.Meta().fields:
             self.setLabel(field)
+        self.fields['pk'] = forms.IntegerField(widget = forms.HiddenInput(), required=False)
 
-    def setForms(self):
+    def setFields(self, **kwargs):
         pass
 
-    def setChoiceField(self, class_obj, name=None):
-        self.setModelChoiceField(class_obj.getText(),
-        class_obj.objects.all())
-        #0=list number 1=str in choice
-        if name:
-            tmp_object= class_obj.objects.get(name=name)
-            for choice in self.fields[class_obj.getText()].choices:
-                if choice[1] == tmp_object.toString():
-                    self.fields[class_obj.getText()].initial = choice[0]
-                    break;
+    def setChoiceField(self, model_obj, initial=None):
+        self.setModelChoiceField(model_obj.getText(),model_obj.objects.all())
 
+        if initial:
+            self.fields[model_obj.getText()].initial = initial.pk
+
+        #0=list number 1=str in choice
+        # if name:
+        #     tmp_object= model_obj.objects.get(name=name)
+        #     for choice in self.fields[model_obj.getText()].choices:
+        #         if choice[1] == tmp_object.toString():
+        #              choice[0]
+        #             break;
 
     def setModelChoiceField(self,field, queryset, required=False):
         self.fields[field]=MyModelChoiceField(queryset=queryset, required=required,
         empty_label=g_form_labels['select'])
         self.setLabel(field)
 
-    def setPosOffice(self, name=None, number=None):
-        self.fields['post_office']=MyModelChoiceField(
-        queryset=PostOffice.objects.all(), required=False,
-        empty_label=g_form_labels['select'])
+    # def setPosOffice(self, name=None, number=None):
+    #     self.fields['post_office']=MyModelChoiceField(
+    #     queryset=PostOffice.objects.all(), required=False,
+    #     empty_label=g_form_labels['select'])
 
-        if name and number:
-            po = PostOffice.objects.get(name=name, number=number)
-
-            for c in self.fields['post_office'].choices:
-                if c[1] == po.toString():
-                    self.fields['post_office'].initial = c[0]
-                    break;
-        self.setLabel('post_office')
-
+        # if name and number:
+        #     po = PostOffice.objects.get(name=name, number=number)
+        #
+        #     for c in self.fields['post_office'].choices:
+        #         if c[1] == po.toString():
+        #             self.fields['post_office'].initial = c[0]
+        #             break;
+        # self.setLabel('post_office')
 
 class SpecieDescriptionForm(BaseForm):
     class Meta:
@@ -90,8 +91,6 @@ class SpecieDescriptionForm(BaseForm):
         fields = ['text']
     def __init__(self, *args, **kwargs):
         super(AnimalFrom, self).__init__(*args, **kwargs)
-        self.setFields(**kwargs)
-        self.setModelFileds()
 
     def setFields(self, **kwargs):
         self.setChoiceField(Specie)
@@ -111,13 +110,13 @@ class OwnerForm(BaseForm):
         widgets = {'name': forms.TextInput(attrs={'required': True,}),
                     'email': forms.EmailInput()}
 
-    def __init__(self, *args, **kwargs):
-        super(OwnerForm, self).__init__(*args, **kwargs)
-        #self.setFields(**kwargs)
-        self.setModelFileds()
-        self.setPosOffice() #self.setPosOffice("Hamina", '12345')
+    def setFields(self, **kwargs):
+        owner = kwargs.pop('instance',None)
+        if not owner == None:
+            self.setChoiceField(PostOffice, initial=owner.post_office)
+        else:
+            self.setChoiceField(PostOffice)
 
-        #PostOffice(name='Kotka', number=49990).save()
 
 class AnimalFrom(BaseForm):
     class Meta:
@@ -129,27 +128,26 @@ class AnimalFrom(BaseForm):
                     'insurance': forms.Textarea(attrs={'rows': 5,}),
                     'other_info': forms.Textarea(attrs={'rows': 5}),}
 
-    def __init__(self, *args, **kwargs):
-        super(AnimalFrom, self).__init__(*args, **kwargs)
-        self.setFields(**kwargs)
-        self.setModelFileds()
-
+    # def __init__(self, *args, **kwargs):
+    #     super(AnimalFrom, self).__init__(*args, **kwargs)
         # Color(name='Musta').save()
         # Sex(name='Uros').save()
         # s = Specie(name='Koira')
         # s.save()
         # Race(name='Russeli', specie=s).save()
 
-
     def setFields(self, **kwargs):
-        specie = kwargs.pop('specie','')
-        sex = kwargs.pop('sex','')
-        race = kwargs.pop('race','')
-        color = kwargs.pop('color','')
-        self.setChoiceField(Specie, name=specie)
-        self.setChoiceField(Sex, name=sex)
-        self.setChoiceField(Race, name=race)
-        self.setChoiceField(Color, name=color)
+        animal = kwargs.pop('instance',None)
+        if not animal is None:
+            self.setChoiceField(Specie, initial=animal.specie)
+            self.setChoiceField(Sex, initial=animal.sex)
+            self.setChoiceField(Race, initial=animal.race)
+            self.setChoiceField(Color, initial=animal.color)
+        else:
+            self.setChoiceField(Specie)
+            self.setChoiceField(Sex)
+            self.setChoiceField(Race)
+            self.setChoiceField(Color)
 
         # po = PostOffice(name='Kotka',number='12345')
         # po.save()
@@ -158,9 +156,6 @@ class AnimalFrom(BaseForm):
 
 
 class SexForm(BaseForm):
-    def setForms(self):
-        self.setLabel('name', 'sex')
-
     class Meta:
         model = Sex
         fields = ['name']
@@ -168,44 +163,36 @@ class SexForm(BaseForm):
 
 
 class ColorForm(BaseForm):
-    def setForms(self):
-        self.setLabel('name', 'color')
-
     class Meta:
         model = Color
         fields = ['name']
 
 class SpecieForm(BaseForm):
-    def setForms(self):
-        self.setLabel('name', 'specie')
     class Meta:
         model = Specie
         fields = ['name']
 
 class RaceForm(BaseForm):
-    def setForms(self):
-        self.setLabel('name', 'race')
-
     class Meta:
         model = Race
         fields = ['name']
 
     def __init__(self, *args, **kwargs):
-        specie = kwargs.pop('specie','') #there shold be defined specie what would be selected
         super(RaceForm, self).__init__(*args, **kwargs)
-        self.fields['specie']=forms.ModelChoiceField(queryset=Specie.objects.filter(name=specie)) #select the correct object
-        self.setLabel('specie', 'specie')
+        specie = kwargs.pop('specie','')
+        self.setChoiceField(Specie, name=specie)
 
 class AuthForm(AuthenticationForm):
-    # class Meta:
-    #     labels = {'username':g_login_text['username_text']}
-    def __init__(self, *args, **kwargs):
-        super(AuthenticationForm,self).__init__(*args,**kwargs)
-        self.fields['username'].label = ''
-        self.fields['password'].label = ''
-        self.fields['username'].widget.attrs.update({'class':'form-control','placeholder':g_login_text['username_placeholder']})
-        self.fields['password'].widget.attrs.update({'class':'form-control','placeholder':g_login_text['password_placeholder']})
-
-    def confirm_login_allowed(self, user):
-        print("user", user)
-        pass
+    pass
+#     # class Meta:
+#     #     labels = {'username':g_login_text['username_text']}
+#     def __init__(self, *args, **kwargs):
+#         super(AuthenticationForm,self).__init__(*args,**kwargs)
+#         # self.fields['username'].label = ''
+#         # self.fields['password'].label = ''
+#         # self.fields['username'].widget.attrs.update({'class':'form-control','placeholder':g_login_text['username_placeholder']})
+#         # self.fields['password'].widget.attrs.update({'class':'form-control','placeholder':g_login_text['password_placeholder']})
+#
+#     def confirm_login_allowed(self, user):
+#         print("user", user)
+#         pass

@@ -21,6 +21,8 @@ class PostOffice(models.Model):
     name = models.CharField(max_length=100)
     number = models.IntegerField()
 
+    def getText(self=None):
+        return 'post_office'
     def toString(self):
         return "%s, %i" % (self.name, self.number)
 
@@ -45,7 +47,8 @@ class Animal(models.Model):
     sex = models.ForeignKey('Sex', on_delete=models.CASCADE, blank=True, null=True)
     race = models.ForeignKey('Race', on_delete=models.CASCADE, blank=True, null=True)
     color = models.ForeignKey('Color', on_delete=models.CASCADE, blank=True, null=True)
-
+    def getText(self=None):
+        return 'animal'
 
 
 class Operation(models.Model):
@@ -62,7 +65,8 @@ class VisitAnimal(models.Model):
     status = models.CharField(max_length=1000, blank=True)
     diagnosis = models.CharField(max_length=1000, blank=True)
     treatment = models.CharField(max_length=1000, blank=True)
-
+    def getText(self=None):
+        return 'visitAnimal'
 
 class Visit(models.Model):
     startTime = models.DateField(auto_now=True)
@@ -75,7 +79,8 @@ class Visit(models.Model):
     items = models.ManyToManyField(Item)
 
     archive = models.BooleanField(default=False)
-
+    def getText(self=None):
+        return 'visit'
 
 
 class Owner(models.Model):
@@ -91,37 +96,40 @@ class Owner(models.Model):
     other_info = models.TextField(max_length=500, blank=True)
 
     archive = models.BooleanField(default=False)
+    def getText(self=None):
+        return 'owner'
 
 class Bill(models.Model):
-        visit = models.ForeignKey('Visit', on_delete=models.CASCADE)
+    visit = models.ForeignKey('Visit', on_delete=models.CASCADE)
 
-        #ALV1
-        clinic_payment = models.DecimalField(max_digits=10, decimal_places=2)
-        operations_payment = models.DecimalField(max_digits=10, decimal_places=2)
-        lab_payment = models.DecimalField(max_digits=10, decimal_places=2)
-        accessories_payment = models.DecimalField(max_digits=10, decimal_places=2)
+    #ALV1
+    clinic_payment = models.DecimalField(max_digits=10, decimal_places=2)
+    operations_payment = models.DecimalField(max_digits=10, decimal_places=2)
+    lab_payment = models.DecimalField(max_digits=10, decimal_places=2)
+    accessories_payment = models.DecimalField(max_digits=10, decimal_places=2)
 
-        #ALV2
-        medicines_payment = models.DecimalField(max_digits=10, decimal_places=2)
+    #ALV2
+    medicines_payment = models.DecimalField(max_digits=10, decimal_places=2)
 
-        #ALV3
-        diet_payment = models.DecimalField(max_digits=10, decimal_places=2)
+    #ALV3
+    diet_payment = models.DecimalField(max_digits=10, decimal_places=2)
 
-        km = models.DecimalField(max_digits=10, decimal_places=2)
-        km_payment = models.DecimalField(max_digits=10, decimal_places=2)
+    km = models.DecimalField(max_digits=10, decimal_places=2)
+    km_payment = models.DecimalField(max_digits=10, decimal_places=2)
 
-        #TODO: cereate these fields!
-        #payment_method = models.CharField(max_length=100)
-        #status = Column(Integer)
+    #TODO: cereate these fields!
+    #payment_method = models.CharField(max_length=100)
+    #status = Column(Integer)
 
-        due_date =  models.DateField()
-        paid_time  = models.DateField()
-        paid_value = models.DecimalField(max_digits=10, decimal_places=2)
+    due_date =  models.DateField()
+    paid_time  = models.DateField()
+    paid_value = models.DecimalField(max_digits=10, decimal_places=2)
 
-        index_number = models.IntegerField()
+    index_number = models.IntegerField()
 
-        other_info = models.CharField(max_length=1000)
-
+    other_info = models.CharField(max_length=1000)
+    def getText(self=None):
+        return 'bill'
 
 '''
 This class just saves space because we dont have to save color string to for all animals
