@@ -2,15 +2,10 @@
 
 {% block maincontent %}
     <div>
-        {% if saved %}
-          <div class="alert alert-success">
-              <a href="#" class="close" data-dismiss="alert">x></a>
-              <strong> {{saved}} </strong>
-          </div>
-        {% endif %}
+        <h2> Animal page </h2>
         {% if animal_form.errors %}
         <div class="alert alert-warning">
-            <a href="#" class="close" data-dismiss="alert">x</a>
+            <a href="#" class="close" data-dismiss="alert">&times;</a>
             <strong>Error!</strong>
         </div>
         {% endif %}

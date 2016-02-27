@@ -5,26 +5,8 @@ from django.contrib.auth.forms import AuthenticationForm
 
 from VetApp.translate import g_login_text, g_form_labels, g_form_placeholders
 
-from VetApp.models import Sex, Color, Specie, Race, Animal, Owner, PostOffice
-# g_login_text = {'username_placeholder':'Nimi','password_placeholder':'Salasana',
-#                 'username_text':'Käyttäjä', 'password_text':'Salasana'}
+from VetApp.models import *
 
-# class AnimalFort
-
-# class ButtonWidget(forms.Widget):
-#     def render(self, name, text, url, attrs=None):
-#         return '''<a name="{name}" href="{url}">"{text}"</a>'''.format(name=name,url=url, text=text)
-
-
-# <div class="container">
-#     <div class="row" id="error-container">
-#          <div class="span12">
-#              <div class="alert alert-error"><button type="button" class="close" data-dismiss="alert">×</button>test error message</div>
-#            </div>
-#       	</div>
-#   	</div>
-
-#<dic class="alert alert-warning"><a href="#" class"close" data-dismiss="error">x</a><strong>%s</strong></div>
 
 from django.forms.utils import ErrorList
 class DivErrorList(ErrorList):
@@ -100,6 +82,26 @@ class BaseForm(forms.ModelForm):
                     self.fields['post_office'].initial = c[0]
                     break;
         self.setLabel('post_office')
+
+
+class SpecieDescriptionForm(BaseForm):
+    class Meta:
+        model = SpecieDescription
+        fields = ['text']
+    def __init__(self, *args, **kwargs):
+        super(AnimalFrom, self).__init__(*args, **kwargs)
+        self.setFields(**kwargs)
+        self.setModelFileds()
+
+    def setFields(self, **kwargs):
+        self.setChoiceField(Specie)
+
+
+class ItemForm(BaseForm):
+    class Meta:
+        model=Item
+        fields=['name', 'description', 'stock_price', 'price',
+        'barcode', 'count_type', 'archive']
 
 
 class OwnerForm(BaseForm):

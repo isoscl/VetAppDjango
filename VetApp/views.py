@@ -1,11 +1,12 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.views.generic import View
-from django.http import Http404
+from django.http import Http404, HttpResponseRedirect
+from django.core.exceptions import ObjectDoesNotExist
 
-from VetApp.forms import AuthForm, RaceForm, SpecieForm, SexForm, ColorForm, AnimalFrom
-from VetApp.forms import OwnerForm, MyModelChoiceField
-from VetApp.models import Animal
+from VetApp.translate import g_save_tests
+from VetApp.forms import *
+from VetApp.models import *
 
 from VetApp import models
 
@@ -44,6 +45,29 @@ class BaseView(View):
         if self.request.session.__contains__('init'):
             self.request.session.__setitem__('init', True)
 
+    #initForm and return render or 404
+    def initFormAndRender(self, form, form_name=None, html_path=None):
+        if form_name is None:
+            form_name = form.__name__[:-4].lower() + '_form' # XXXFORM -> xxx_form
+
+        if html_path is None:
+            html_path = form.__name__[:-4].lower() + '.html'
+
+        _id = self.request.GET.get('id', '').strip('/')
+        if not _id is '':
+            if _id.isdigit():
+                try:
+                    obj = form.Meta.model.objects.get(id=int(_id))
+                    self.context[form_name] = form(instance=obj)
+                except ObjectDoesNotExist:
+                    return Http404()
+            else:
+                return Http404()
+        else:
+            self.context[form_name] = form()
+
+        return render(self.request, html_path, self.context)
+
     def Alert(self, message):
         if not 'alert_message' in self.context:
             self.context['alert_message'] = message
@@ -58,17 +82,43 @@ class BaseView(View):
         print("Error")
         raise Http404("BaseView used! Even it should not")
 
-    def validate_form(self, form):
-        if form.is_valid():
+    def saveFormAndRender(self, form, form_name=None, html_path=None):
+        if form_name is None:
+            form_name = form.__name__[:-4].lower() + '_form' # XXXFORM -> xxx_form
+
+        if html_path is None:
+            html_path = form.__name__[:-4].lower() + '.html'
+
+
+        self.context[form_name] = form(self.request.POST)
+
+        if self.context[form_name].is_valid():
             print("Is valid")
-            obj = form.Meta.model()
-            for label_name in form.cleaned_data:
-                setattr(obj, label_name, form.cleaned_data[label_name])
+            print("POST: ", self.request.POST)
+            _id = self.request.POST.get('id', '').strip('/')
+
+            obj = None
+            if not _id is '':
+                if _id.isdigit(): #check that id is valid
+                    try:
+                        obj = form.Meta.model.objects.get(id=int(_id))
+                    except ObjectDoesNotExist:
+                        return Http404()
+                else:
+                    return Http404()
+            else:
+                obj = form.Meta.model() #new object
+
+            for label_name in self.context[form_name].cleaned_data:
+                setattr(obj, label_name, self.context[form_name].cleaned_data[label_name])
+
             obj.save()
-            return True
+            self.request.message = g_save_tests['saved']
+
+            return redirect('/'+form.__name__[:-4].lower()+'/?id='+str(obj.pk)+'&saved')
         else:
             print("Error")
-            return False
+            return render(self.request, html_path, self.context)
 
 
 
@@ -78,27 +128,18 @@ class IndexView(BaseView):
 
 class AnimalView(BaseView):
     def _get(self):
-        self.context['animal_form'] = AnimalFrom()
-        return render(self.request, 'animal.html', self.context)
+        return self.initFormAndRender(AnimalFrom)
 
     def _post(self):
-        self.context['animal_form'] = AnimalFrom(self.request.POST)
-        if self.validate_form(self.context['animal_form']):
-            return render(self.request, 'animal.html', self.context)
-        else:
-            return render(self.request, 'animal.html', self.context)
+        return self.saveFormAndRender(AnimalFrom)
 
 class OwnerView(BaseView):
+
     def _get(self):
-        self.context['owner_form'] = OwnerForm()
-        return render(self.request, 'owner.html', self.context)
+        return self.initFormAndRender(OwnerForm)
 
     def _post(self):
-        self.context['owner_form'] = OwnerForm(self.request.POST)
-        if self.validate_form(self.context['owner_form']):
-            return render(self.request, 'owner.html', self.context)
-        else:
-            return render(self.request, 'owner.html', self.context)
+        return self.saveFormAndRender(OwnerForm)
 
 
 # @login_required(login_url='/')

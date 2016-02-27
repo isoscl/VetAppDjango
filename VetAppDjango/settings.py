@@ -42,7 +42,6 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'VetApp',
-    'twitter_bootstrap',
 )
 
 MIDDLEWARE_CLASSES = (

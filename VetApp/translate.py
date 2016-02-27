@@ -15,6 +15,7 @@ g_form_labels = {'sex':'Sukupuoli', 'color':'Väri', 'specie':'Laji',
                 'post_office':'Postitoimipaikka', 'postnumber':'Postinumero',
                 'select':'Valitse'}
 
+g_save_tests = {'saved':'Tallennettu'}
 
 g_form_placeholders = {'sex':'Sukupuoli', 'color':'Väri', 'specie':'Laji',
                        'race':'Rotu', 'name':'Nimi', 'official_name':'Virallinen nimi',

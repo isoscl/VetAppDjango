@@ -1,9 +1,11 @@
 from django.db import models
 from VetApp.translate import g_count_type
 
-class ALV(models.Model):
-    class_type = models.IntegerField()
-    value = models.IntegerField()
+class ALV():
+    class0 = 0
+    class1 = 24
+    class2 = 10
+    class3 = 14
 
 class SpecieDescription(models.Model):
     specie = models.ForeignKey('Specie', on_delete=models.CASCADE)
@@ -17,18 +19,36 @@ class Item(models.Model):
     barcode = models.TextField(max_length=100, blank=True)
     count_type = models.TextField(max_length=10, default=g_count_type['default'])
     archive = models.BooleanField(default=False)
-    alv =  models.ForeignKey('ALV', on_delete=models.CASCADE)
 
     specie_description =  models.ManyToManyField(SpecieDescription)
 
+    def getALV(self):
+        return self.price * self.getALVPercent/100.
+
+    def getALVTuple(self):
+        return (self.getALVPercent, self.getALV())
+
+    def getALVPercent(self=None):
+        return ALV.class1
+
+    def getALVPrice(self):
+        return self.price * (100 + self.getALVPercent)/100.
+
 class Medicine(Item):
-    pass
+    def getALVPercent(self = None):
+        return ALV.class2
 
 class Vaccine(Medicine):
-    pass
-
-class Drug(Medicine):
-    pass
+    duration = models.DurationField()
 
 class Feed(Item):
+    def getALVPercent(self = None):
+        return ALV.class3
+
+class DrugUsage(models.Model):
+    drug = models.ForeignKey('Drug', on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=5, decimal_places=2)
+    time = models.DateField(auto_now=False)
+
+class Drug(Medicine):
     pass

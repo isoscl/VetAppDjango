@@ -20,7 +20,9 @@ from VetApp import views
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
     url(r'^animal/$', views.AnimalView.as_view()),
-    url(r'^owner/$', views.OwnerView.as_view()),
-    url(r'^$', views.IndexView.as_view()),
+    url(r'^owner/$', views.OwnerView.as_view(), name='Owner'),
+    url(r'^owner/(?P<id>\d+)/$', views.OwnerView.as_view(), name='Owner'),
+    url(r'^$', views.IndexView.as_view(), name='VetApp'),
+
 
 ]

@@ -92,6 +92,37 @@ class Owner(models.Model):
 
     archive = models.BooleanField(default=False)
 
+class Bill(models.Model):
+        visit = models.ForeignKey('Visit', on_delete=models.CASCADE)
+
+        #ALV1
+        clinic_payment = models.DecimalField(max_digits=10, decimal_places=2)
+        operations_payment = models.DecimalField(max_digits=10, decimal_places=2)
+        lab_payment = models.DecimalField(max_digits=10, decimal_places=2)
+        accessories_payment = models.DecimalField(max_digits=10, decimal_places=2)
+
+        #ALV2
+        medicines_payment = models.DecimalField(max_digits=10, decimal_places=2)
+
+        #ALV3
+        diet_payment = models.DecimalField(max_digits=10, decimal_places=2)
+
+        km = models.DecimalField(max_digits=10, decimal_places=2)
+        km_payment = models.DecimalField(max_digits=10, decimal_places=2)
+
+        #TODO: cereate these fields!
+        #payment_method = models.CharField(max_length=100)
+        #status = Column(Integer)
+
+        due_date =  models.DateField()
+        paid_time  = models.DateField()
+        paid_value = models.DecimalField(max_digits=10, decimal_places=2)
+
+        index_number = models.IntegerField()
+
+        other_info = models.CharField(max_length=1000)
+
+
 '''
 This class just saves space because we dont have to save color string to for all animals
 -name is name of color
