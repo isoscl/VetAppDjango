@@ -1,7 +1,18 @@
 {% extends "site_base.html" %}
-    
+
 {% block maincontent %}
     <div>
-        <h2> Item page </h2>
+        <h2> Tuote </h2>
+        {% if item_form.errors %}
+        <div class="alert alert-warning">
+            <a href="#" class="close" data-dismiss="alert">x</a>
+            <strong>{{item_form.errors}}</strong>
+        </div>
+        {% endif %}
+        <form method="POST" form class="form-group">
+        {% csrf_token %}
+        {{item_form}}
+        <button class="btn btn-lg btn-primary " type="submit">Tallenna</button>
+        </form>
     </div>
 {% endblock %}

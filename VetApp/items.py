@@ -12,12 +12,12 @@ class SpecieDescription(models.Model):
     text = models.TextField(max_length=1000)
 
 class Item(models.Model):
-    name = models.TextField(max_length=100)
+    name = models.CharField(max_length=100)
     description = models.TextField(max_length=1000, blank=True)
-    stock_price = models.IntegerField()
-    price = models.IntegerField()
-    barcode = models.TextField(max_length=100, blank=True)
-    count_type = models.TextField(max_length=10, default=g_count_type['default'])
+    stock_price = models.DecimalField(max_digits=9, decimal_places=2, default=0.00)
+    price = models.DecimalField(max_digits=9, decimal_places=2)
+    barcode = models.CharField(max_length=100, blank=True)
+    count_type = models.CharField(max_length=10, default=g_count_type['default'])
     archive = models.BooleanField(default=False)
 
     specie_description =  models.ManyToManyField(SpecieDescription)

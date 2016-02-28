@@ -68,10 +68,12 @@ class VisitAnimal(models.Model):
     def getText(self=None):
         return 'visitAnimal'
 
+from datetime import datetime
 class Visit(models.Model):
-    startTime = models.DateField(auto_now=True)
-    endTime = models.DateField(auto_now=False)
     visit_reason = models.CharField(max_length=1000, blank=True)
+    start_time =  models.DateTimeField(default=datetime.now(),blank=True, null=True)
+    end_time = models.DateTimeField(auto_now=False, blank=True, null=True)
+
     vet = models.ForeignKey('Vet', on_delete=models.CASCADE)
     owner = models.ForeignKey('Owner', on_delete=models.CASCADE)
 

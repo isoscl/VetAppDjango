@@ -1,7 +1,26 @@
 {% extends "site_base.html" %}
-    
+
 {% block maincontent %}
     <div>
-        <h2> Käynti </h2>
+      <h2> Käynti </h2>
+      {% if visit_form.errors %}
+      <div class="alert alert-warning">
+          <a href="#" class="close" data-dismiss="alert">x</a>
+          <strong>{{visit_form.errors}}</strong>
+      </div>
+      {% endif %}
+      <form method="POST" form class="form-group">
+      {% csrf_token %}
+      {{visit_form}}
+      <button class="btn btn-lg btn-primary " type="submit">Tallenna</button>
+      </form>
+      <script>
+        console.log
+        window.onload= function(){
+          var ISODate = (new Date()).toISOString()
+          console.log(ISODate)
+          document.getElementById('id_start_time').value = ISODate.replace('Z', '');
+        }
+      </script>
     </div>
 {% endblock %}

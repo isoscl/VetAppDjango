@@ -3,7 +3,7 @@ from django.contrib.auth.forms import AuthenticationForm
 
 # from VetApp.models import Vet
 
-from VetApp.translate import g_login_text, g_form_labels, g_form_placeholders
+from VetApp.translate import g_login_text, g_form_labels, g_form_placeholders,g_count_type_list
 
 from VetApp.models import *
 
@@ -27,6 +27,8 @@ class MyModelChoiceField(forms.ModelChoiceField):
         else:
             return  obj.toString() #"%s, %s" % (obj.name, obj.number)
 
+from datetime import datetime
+
 class BaseForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(BaseForm, self).__init__(*args, **kwargs)
@@ -38,8 +40,11 @@ class BaseForm(forms.ModelForm):
         if not text:
             text = name
 
-        if type(self.fields[name]) is forms.DateField :
+        if type(self.fields[name]) is forms.DateField:
             self.fields[name].widget.input_type = 'date'
+        elif type(self.fields[name]) is forms.DateTimeField:
+            self.fields[name].widget.input_type = 'datetime-local'
+            self.fields[name].widget.value = datetime.now()
 
         self.fields[name].label = g_form_labels[text]
         self.fields[name].widget.attrs.update({'class':'form-control','placeholder':g_form_placeholders[name]})
@@ -58,6 +63,19 @@ class BaseForm(forms.ModelForm):
         if initial:
             self.fields[model_obj.getText()].initial = initial.pk
 
+    #field_name=str. list=str_list, required=bool, initila=int
+    def setChoiceFieldWithList(self, field_name, list, required=False, initial=None):
+        _list = []
+        for i in range(0,len(list)):
+            _list.append((i, list[i]))
+
+        self.fields[field_name]=forms.ChoiceField(required=required, choices=_list)
+        self.setLabel(field_name)
+
+        if initial:
+            self.fields[model_obj.getText()].initial = initial
+
+
         #0=list number 1=str in choice
         # if name:
         #     tmp_object= model_obj.objects.get(name=name)
@@ -66,10 +84,10 @@ class BaseForm(forms.ModelForm):
         #              choice[0]
         #             break;
 
-    def setModelChoiceField(self,field, queryset, required=False):
-        self.fields[field]=MyModelChoiceField(queryset=queryset, required=required,
+    def setModelChoiceField(self,field_name, queryset, required=False):
+        self.fields[field_name]=MyModelChoiceField(queryset=queryset, required=required,
         empty_label=g_form_labels['select'])
-        self.setLabel(field)
+        self.setLabel(field_name)
 
     # def setPosOffice(self, name=None, number=None):
     #     self.fields['post_office']=MyModelChoiceField(
@@ -89,19 +107,41 @@ class SpecieDescriptionForm(BaseForm):
     class Meta:
         model = SpecieDescription
         fields = ['text']
-    def __init__(self, *args, **kwargs):
-        super(AnimalFrom, self).__init__(*args, **kwargs)
 
     def setFields(self, **kwargs):
         self.setChoiceField(Specie)
 
+
+class MoneyInput(forms.widgets.NumberInput):
+    def __init__(self, *args, **kwargs):
+        print(kwargs)
+        kwargs.update({'attrs':{'min': '0', 'max': '99999', 'step': '0.05'}})
+        super(MoneyInput, self).__init__(*args, **kwargs)
 
 class ItemForm(BaseForm):
     class Meta:
         model=Item
         fields=['name', 'description', 'stock_price', 'price',
         'barcode', 'count_type', 'archive']
+        widgets =  {'name': forms.TextInput(attrs={'required': True,}),
+                    'description': forms.Textarea(attrs={'rows': 5,}),
+                    'stock_price':MoneyInput(), 'price':MoneyInput()}
 
+    def setFields(self, **kwargs):
+        self.setChoiceFieldWithList('count_type', g_count_type_list)
+
+
+class VisitForm(BaseForm):
+    class Meta:
+        model=Visit
+        fields = ['start_time', 'end_time', 'visit_reason', 'vet', 'owner','visitanimals', 'items']
+        widgets = {'visit_reason':forms.Textarea(attrs={'rows': 5,})}
+
+    def setFields(self, **kwargs):
+        visit = kwargs.pop('instance',None)
+        if not visit is None:
+            self.setChoiceField(Owner, initial=visit.owner)
+            self.setChoiceField(Vet, initial=visit.vet)
 
 class OwnerForm(BaseForm):
     class Meta:

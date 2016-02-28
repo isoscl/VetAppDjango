@@ -61,7 +61,7 @@ class BaseView(View):
                     self.context[form_name] = form(instance=obj)
                     self.context[form_name]['pk'].field.initial = obj.pk
                 except ObjectDoesNotExist:
-                    return Http404()
+                    return Http404() #TODO:fix no get()!
             else:
                 return Http404()
         else:
@@ -100,7 +100,7 @@ class BaseView(View):
             _id = self.request.POST['pk']
 
             obj = None
-            if not _id is None:
+            if not _id is (None or ''):
                 if _id.isdigit(): #check that id is valid
                     try:
                         print("get object")
@@ -160,7 +160,10 @@ class ItemView(BaseView):
 # @login_required(login_url='/')
 class VisitView(BaseView):
     def _get(self):
-        return render(self.request, 'visit.html', self.context)
+        return self.initFormAndRender(VisitForm)
+
+    def _post(self):
+        return self.saveFormAndRender(VisitForm)
 
 
 # @login_required(login_url='/')

@@ -15,10 +15,12 @@ g_form_placeholders = {'sex':'Sukupuoli', 'color':'Väri', 'specie':'Laji',
 'post_office':'Postitoimipaikka', 'postnumber':'Postinumero',
 'description':'Kuvaus', 'stock_price':'Varasto hinta',
 'price':'Hinta','barcode':'Viivakoodi', 'count_type':'Yksikkö',
-'select':'Valitse'}
+'select':'Valitse','start_time':'Alkamisaika','end_time':'Loppumisaika',
+'visit_reason':'Käynninsyy', 'vet':'Eläinlääkäri','owner':'Omistaja',
+'visitanimals':'Käynnin eläimet', 'items':'Tuotteet'}
 
 g_form_labels = g_form_placeholders
 
-
+g_count_type_list = ['kpl', 'ml', 'l', 'mg', 'g', 'kg']
 
 g_save_tests = {'saved':'Tallennettu'}
