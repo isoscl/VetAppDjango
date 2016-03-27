@@ -1,5 +1,5 @@
 from django.db import models
-from VetApp.translate import g_count_type
+from VetApp.translate import g_count_type_list
 
 class ALV():
     class0 = 0
@@ -17,7 +17,9 @@ class Item(models.Model):
     stock_price = models.DecimalField(max_digits=9, decimal_places=2, default=0.00)
     price = models.DecimalField(max_digits=9, decimal_places=2)
     barcode = models.CharField(max_length=100, blank=True)
-    count_type = models.CharField(max_length=10, default=g_count_type['default'])
+    count_type = models.CharField(max_length=10, choices=g_count_type_list, default='pcs')
+
+
     archive = models.BooleanField(default=False)
 
     specie_description =  models.ManyToManyField(SpecieDescription)

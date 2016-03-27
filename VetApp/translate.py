@@ -1,6 +1,4 @@
 
-g_count_type = {'default':'kpl'}
-
 g_login_text = {'username_placeholder':'Nimi','password_placeholder':'Salasana',
                 'username_text':'Käyttäjä', 'password_text':'Salasana'}
 
@@ -17,10 +15,14 @@ g_form_placeholders = {'sex':'Sukupuoli', 'color':'Väri', 'specie':'Laji',
 'price':'Hinta','barcode':'Viivakoodi', 'count_type':'Yksikkö',
 'select':'Valitse','start_time':'Alkamisaika','end_time':'Loppumisaika',
 'visit_reason':'Käynninsyy', 'vet':'Eläinlääkäri','owner':'Omistaja',
-'visitanimals':'Käynnin eläimet', 'items':'Tuotteet'}
+'visitanimals':'Käynnin eläimet', 'items':'Tuotteet', 'animals':'Eläimet',
+'animal':'Eläin','operations':'Toimenpiteet','items':'Tuotteet',
+'anamnesis':'Anamneesi','status':'Status','diagnosis':'Diagnoosi',
+'treatment':'Hoito','vet_number':'Eläinlääkäri numero','text':'Teksti'}
 
 g_form_labels = g_form_placeholders
 
-g_count_type_list = ['kpl', 'ml', 'l', 'mg', 'g', 'kg']
+g_count_type_list = (('pcs','kpl'), ('ml','ml'), ('l','l'),
+                     ('mg','mg'), ('g','g'), ('kg','kg'))
 
 g_save_tests = {'saved':'Tallennettu'}

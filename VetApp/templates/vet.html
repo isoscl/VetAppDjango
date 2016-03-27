@@ -1,7 +1,12 @@
 {% extends "site_base.html" %}
-    
+
 {% block maincontent %}
     <div>
         <h2> Eläinlääkäri </h2>
+        <form method="POST" form class="form-group">
+        {% csrf_token %}
+        {{vet_form}}
+        <button class="btn btn-lg btn-primary " type="submit">Tallenna</button>
+        </form>
     </div>
 {% endblock %}

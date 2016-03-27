@@ -53,10 +53,12 @@ class BaseView(View):
         if html_path is None:
             html_path = form.__name__[:-4].lower() + '.html'
 
+        #print('GET: ', self.request.GET)
         _id = self.request.GET.get('id', '').strip('/')
         if not _id is '':
             if _id.isdigit():
                 try:
+                    print("views->initFormAndRender: object pk found")
                     obj = form.Meta.model.objects.get(id=int(_id))
                     self.context[form_name] = form(instance=obj)
                     self.context[form_name]['pk'].field.initial = obj.pk
@@ -65,8 +67,14 @@ class BaseView(View):
             else:
                 return Http404()
         else:
+            print("views->initFormAndRender: make plain form")
             self.context[form_name] = form()
+            self.context[form_name].setFields(self.request.GET)
 
+
+        # extraforms = self.context[form_name].getInternalForms()
+        # print(extraforms)
+        # self.context.update(extraforms)
         return render(self.request, html_path, self.context)
 
 
@@ -91,12 +99,11 @@ class BaseView(View):
         if html_path is None:
             html_path = form.__name__[:-4].lower() + '.html'
 
-
+        print('POST: ', self.request.POST)
         self.context[form_name] = form(self.request.POST)
 
         if self.context[form_name].is_valid():
             print("Is valid")
-            print("POST: ", self.request.POST)
             _id = self.request.POST['pk']
 
             obj = None
@@ -113,10 +120,19 @@ class BaseView(View):
                 print("new object")
                 obj = form.Meta.model() #new object
 
+            save_after_object_variables = []
+            if hasattr(form.Meta, 'save_after_object'):
+                save_after_object_variables = form.Meta.save_after_object
+
             for label_name in self.context[form_name].cleaned_data:
-                if not label_name == 'pk':
+                if not (label_name == 'pk' or (label_name in save_after_object_variables)):
                     setattr(obj, label_name, self.context[form_name].cleaned_data[label_name])
             obj.save()
+            if len(save_after_object_variables) > 0:
+                for label_name in save_after_object_variables:
+                    setattr(obj, label_name, self.context[form_name].cleaned_data[label_name])
+                obj.save()
+
             self.request.message = g_save_tests['saved']
 
             return redirect('/'+form.__name__[:-4].lower()+'/?id='+str(obj.pk)+'&saved')
@@ -184,7 +200,10 @@ class BillView(BaseView):
 # @login_required(login_url='/')
 class VetView(BaseView):
     def _get(self):
-        return render(self.request, 'vet.html', self.context)
+        return self.initFormAndRender(VetForm)
+
+    def _post(self):
+        return self.saveFormAndRender(VetForm)
 
 # @login_required(login_url='/')
 class SettingsView(BaseView):

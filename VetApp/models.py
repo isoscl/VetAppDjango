@@ -8,9 +8,16 @@ from VetApp.items import *
 
 
 class Vet(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    #user = models.OneToOneField(User, on_delete=models.CASCADE)
     vet_number = models.CharField(max_length=25)
 
+    def __str__(self):
+        return str(self.vet_number)
+
+    def getText(self=None):
+        return 'vet'
+    def toString(self):
+        return str(self.vet_number)
 # class Marking(models.Model):
 #     self.value = {'micro_number':'Mikrosiru'}
 
@@ -50,6 +57,12 @@ class Animal(models.Model):
     def getText(self=None):
         return 'animal'
 
+    def __str__(self):
+        date = ''
+        if self.birthday:
+            date = self.birthday.strftime('%d.%m.%Y')
+        return ("%s, %s, %s" % (self.name or '', self.official_name or '', date))
+
 
 class Operation(models.Model):
     pass
@@ -65,13 +78,19 @@ class VisitAnimal(models.Model):
     status = models.CharField(max_length=1000, blank=True)
     diagnosis = models.CharField(max_length=1000, blank=True)
     treatment = models.CharField(max_length=1000, blank=True)
+
+    readonly_fields=('animal',)
+
+    class Meta:
+        ordering = ["animal"]
+
     def getText(self=None):
         return 'visitAnimal'
 
 from datetime import datetime
 class Visit(models.Model):
     visit_reason = models.CharField(max_length=1000, blank=True)
-    start_time =  models.DateTimeField(default=datetime.now(),blank=True, null=True)
+    start_time =  models.DateTimeField(blank=True, null=True)
     end_time = models.DateTimeField(auto_now=False, blank=True, null=True)
 
     vet = models.ForeignKey('Vet', on_delete=models.CASCADE)
@@ -91,7 +110,7 @@ class Owner(models.Model):
 
     post_office = models.ForeignKey('PostOffice',  on_delete=models.CASCADE, blank=True, null=True)
 
-    animals = models.ManyToManyField(Animal)
+    animals = models.ManyToManyField(Animal, blank=True)
 
     phonenumber = models.CharField(max_length=100, blank=True)
     email = models.EmailField(max_length=100, blank=True)
@@ -100,6 +119,12 @@ class Owner(models.Model):
     archive = models.BooleanField(default=False)
     def getText(self=None):
         return 'owner'
+    def toString(self):
+        return self.name
+
+    def __str__(self):
+        return "%s, %s" % (self.name, self.address)
+
 
 class Bill(models.Model):
     visit = models.ForeignKey('Visit', on_delete=models.CASCADE)

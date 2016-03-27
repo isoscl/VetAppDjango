@@ -12,6 +12,11 @@
       <form method="POST" form class="form-group">
       {% csrf_token %}
       {{visit_form}}
+      <label>{{visit_form.owner_label}}:</label> <div>{{visit_form.owner_text}}</div><br>
+      {% for form in visit_form.formset %}
+        <label>{{form.animal_label}}:</label> <div>{{form.animal_text}}</div><br>
+        {{form}}
+      {% endfor %}
       <button class="btn btn-lg btn-primary " type="submit">Tallenna</button>
       </form>
       <script>

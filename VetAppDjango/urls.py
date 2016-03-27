@@ -25,4 +25,5 @@ urlpatterns = [
     url(r'^$', views.IndexView.as_view(), name='VetApp'),
     url(r'^item/$', views.ItemView.as_view(), name='Item'),
     url(r'^visit/$', views.VisitView.as_view(), name='Visit'),
+    url(r'^vet/$', views.VetView.as_view(), name='Vet'),
 ]
