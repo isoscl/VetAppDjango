@@ -13,10 +13,21 @@
       {% csrf_token %}
       {{visit_form}}
       <label>{{visit_form.owner_label}}:</label> <div>{{visit_form.owner_text}}</div><br>
-      {% for form in visit_form.formset %}
-        <label>{{form.animal_label}}:</label> <div>{{form.animal_text}}</div><br>
-        {{form}}
-      {% endfor %}
+
+      <ul class="nav nav-tabs">
+        {% for form in visit_form.formset %}
+            <li {% if form == visit_form.formset|first %} class="active" {% endif %} ><a data-toggle="tab" href="#{{form.animal_pk}}">{{form.animal_text}}</a></li>
+        {% endfor %}
+      </ul>
+      <div class="tab-content">
+        {% for form in visit_form.formset %}
+          <div id="{{form.animal_pk}}" {% if form == visit_form.formset|first %} class="tab-pane fade in active"
+          {% else %} class="tab-pane fade" {% endif %}>
+            {{form}}
+          </div>
+        {% endfor %}
+      </div>
+
       <button class="btn btn-lg btn-primary " type="submit">Tallenna</button>
       </form>
       <script>
@@ -24,7 +35,7 @@
         window.onload= function(){
           var ISODate = (new Date()).toISOString()
           console.log(ISODate)
-          document.getElementById('id_start_time').value = ISODate.replace('Z', '');
+          document.getElementById('id_start_time').value = ISODate;
         }
       </script>
     </div>

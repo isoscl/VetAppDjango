@@ -53,28 +53,12 @@ class BaseView(View):
         if html_path is None:
             html_path = form.__name__[:-4].lower() + '.html'
 
-        #print('GET: ', self.request.GET)
-        _id = self.request.GET.get('id', '').strip('/')
-        if not _id is '':
-            if _id.isdigit():
-                try:
-                    print("views->initFormAndRender: object pk found")
-                    obj = form.Meta.model.objects.get(id=int(_id))
-                    self.context[form_name] = form(instance=obj)
-                    self.context[form_name]['pk'].field.initial = obj.pk
-                except ObjectDoesNotExist:
-                    return Http404() #TODO:fix no get()!
-            else:
-                return Http404()
-        else:
-            print("views->initFormAndRender: make plain form")
-            self.context[form_name] = form()
-            self.context[form_name].setFields(self.request.GET)
+        print('GET: ', self.request.GET)
 
+        self.context[form_name] = form(self.request.GET)
 
-        # extraforms = self.context[form_name].getInternalForms()
-        # print(extraforms)
-        # self.context.update(extraforms)
+        #TODO: handle erorrs at creating form
+
         return render(self.request, html_path, self.context)
 
 
@@ -103,6 +87,8 @@ class BaseView(View):
         self.context[form_name] = form(self.request.POST)
 
         if self.context[form_name].is_valid():
+            print(self.context[form_name].cleaned_data)
+
             print("Is valid")
             _id = self.request.POST['pk']
 
@@ -124,11 +110,15 @@ class BaseView(View):
             if hasattr(form.Meta, 'save_after_object'):
                 save_after_object_variables = form.Meta.save_after_object
 
+            print(form.Meta, save_after_object_variables)
             for label_name in self.context[form_name].cleaned_data:
-                if not (label_name == 'pk' or (label_name in save_after_object_variables)):
+                if not (label_name == 'pk') and not (label_name in save_after_object_variables):
+                    print('----',obj, label_name, self.context[form_name].cleaned_data[label_name])
                     setattr(obj, label_name, self.context[form_name].cleaned_data[label_name])
             obj.save()
             if len(save_after_object_variables) > 0:
+                self.context[form_name].saveRelatedObjects()
+
                 for label_name in save_after_object_variables:
                     setattr(obj, label_name, self.context[form_name].cleaned_data[label_name])
                 obj.save()

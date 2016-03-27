@@ -7,6 +7,7 @@ from VetApp.translate import g_login_text, g_form_labels, g_form_placeholders,g_
 
 from VetApp.models import *
 
+from datetime import datetime
 
 def translate_labels(field_list):
     translate_dict = {}
@@ -29,114 +30,43 @@ def make_time_widgets(time_fields):
         widgets[key] = widget
     return widgets
 
-# from django.forms.utils import ErrorList
-# class DivErrorList(ErrorList):
-#     def __str__(self):              # __unicode__ on Python 2
-#         return self.as_divs()
-#     def as_divs(self):
-#         if not self: return ''
-#         #'<div class="form-group ">%s</div>'
-#         return "" # '<input class="form-control" required>%s</input>'  % ''.join([self.errorhtml(e) for e in self])
-#
-#     def errorhtml(self, e):
-#         return '' #<dic class="alert alert-warning"><a href="#" class"close" data-dismiss="error">x</a><strong>%s</strong></div>' % e
+def set_instakce_to(obj, kwargs):
+    if obj:
+        kwargs.update({'instance': obj})
 
-class MyModelChoiceField(forms.ModelChoiceField):
-    def label_from_instance(self, obj):
-        if not obj:
-            return 'Tyhjä'
-        else:
-            return  obj.toString() #"%s, %s" % (obj.name, obj.number)
+def clean_pk(_pk):
+    if (type(_pk) is str and _pk.isdigit()) or (type(_pk) is int):
+        return int(_pk)
+    return None
 
-from datetime import datetime
+def get_object(_pk, obj):
+    _pk = clean_pk(_pk)
+    if _pk:
+        try:
+            return obj.objects.get(id=int(_pk))
+        except ObjectDoesNotExist:
+            return None #TODO: this error should be handled
+    return None
 
-class BaseForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super(BaseForm, self).__init__(*args, **kwargs)
-        #self.error_class=DivErrorList
-        self.__setFields(**kwargs)
-
-        #set model fields
-        for field in self.Meta().fields:
-            self.fields[field].widget.attrs.update({'class':'form-control','placeholder':g_form_placeholders[field]})
-        self.fields['pk'] = forms.IntegerField(widget = forms.HiddenInput(), required=False)
-
-    def setLabel(self, name, text=None):
-        pass
-        # if not text:
-        #     text = name
-        # if type(self.fields[name]) is forms.DateField:
-        #     self.fields[name].widget.input_type = 'date'
-        # elif type(self.fields[name]) is forms.DateTimeField:
-        #     self.fields[name].widget.input_type = 'datetime-local'
-        #     self.fields[name].widget.value = datetime.now()
-        #
-        # #self.fields[name].label = g_form_labels[text]
+def format_widgets_and_add_pk(self, obj=None):
+    _pk = None
+    if obj:
+        _pk = obj.pk
+    for field in self.Meta().fields:
+        self.fields[field].widget.attrs.update({'class':'form-control','placeholder':g_form_placeholders[field]})
+    self.fields['pk'] = forms.IntegerField(widget = forms.HiddenInput(),
+    required=False, initial=_pk)
 
 
-    def __setFields(self, **kwargs):
-        pass
-
-    def setFields(self, parameters):
-        pass
-
-    def cleanPk(self, _id):
-        if (type(_id) is str and _id.isdigit()) or (type(_id) is int):
-            return int(_id)
-        return None
-
-    def getObject(self,_id, obj):
-        #return None or object with constuctor obj
-        if (type(_id) is str and _id.isdigit()) or (type(_id) is int):
-            return obj.objects.get(id=int(_id))
-        elif not (type(id) is int):
-            return None
-
-    # def setChoiceFieldSingleObject(self,obj_class, obj_pk):
-    #     if not obj_class is None:
-    #         print("setChoiceField",obj_class)
-    #         self.fields[obj_class.getText()]=MyModelChoiceField(queryset=obj_class.objects.all(),required=False)
-    #         self.setLabel(obj_class.getText())
-    #         self.fields[obj_class.getText()].initial = obj_pk
-
-    # def setQueryInChoiceField(self):
-    #     pass
-
-    def getInternalForms(self):
-        return {}
-
-    # def setChoiceField(self, model_obj, initial=None):
-    #     if not model_obj is None:
-    #         #make field
-    #         print("---------------------------------")
-    #         self.fields[model_obj.getText()]=MyModelChoiceField(queryset=model_obj.objects.all(),
-    #             required=False, empty_label=g_form_labels['select'])
-    #         self.setLabel(model_obj.getText())
-    #         #check if there is initial value and select it if found
-    #         if initial:
-    #             self.fields[model_obj.getText()].initial = initial.pk
-
-    #field_name=str. list=str_list, required=bool, initila=int
-    # def setChoiceFieldWithList(self, field_name, list, required=False, initial=None):
-    #     _list = []
-    #     for i in range(0,len(list)):
-    #         _list.append((i, list[i]))
-    #
-    #     self.fields[field_name]=forms.ChoiceField(required=required, choices=_list)
-    #     self.setLabel(field_name)
-    #
-    #     if initial:
-    #         self.fields[model_obj.getText()].initial = initial
-
-
-class SpecieDescriptionForm(BaseForm):
+class SpecieDescriptionForm(forms.ModelForm):
     class Meta:
         model = SpecieDescription
         fields = ['text']
         labels = translate_labels(fields)
 
-    def __setFields(self, **kwargs):
-        self.setChoiceField(Specie)
+    def __init__(self, *args, **kwargs):
+        super(SpecieDescriptionForm, self).__init__(*args, **kwargs)
+        format_widgets_and_add_pk(self)
 
 
 class MoneyInput(forms.widgets.NumberInput):
@@ -145,7 +75,7 @@ class MoneyInput(forms.widgets.NumberInput):
         kwargs.update({'attrs':{'min': '0', 'max': '99999', 'step': '0.05'}})
         super(MoneyInput, self).__init__(*args, **kwargs)
 
-class ItemForm(BaseForm):
+class ItemForm(forms.ModelForm):
     class Meta:
         model=Item
         fields=['name', 'description', 'stock_price', 'price',
@@ -155,40 +85,42 @@ class ItemForm(BaseForm):
                     'stock_price':MoneyInput(), 'price':MoneyInput()}
         labels = translate_labels(fields)
 
-    #def __setFields(self, **kwargs):
-        #self.setChoiceFieldWithList('count_type', g_count_type_list)
+    def __init__(self, *args, **kwargs):
+        super(ItemForm, self).__init__(*args, **kwargs)
+        format_widgets_and_add_pk(self)
 
-class VisitAnimalForm(BaseForm):
+class VisitAnimalForm(forms.ModelForm):
     class Meta:
         model=VisitAnimal
         fields=['animal', 'operations', 'items','anamnesis',
                 'status','diagnosis','treatment']
         widgets={'animal': forms.HiddenInput(),
-                'anamnesis':forms.Textarea(attrs={'rows': 5,}),
-                'status':forms.Textarea(attrs={'rows': 5,}),
-                'diagnosis':forms.Textarea(attrs={'rows': 5,}),
-                'treatment':forms.Textarea(attrs={'rows': 5,})}
+                'anamnesis':forms.Textarea(attrs={'rows': 2,}),
+                'status':forms.Textarea(attrs={'rows': 2,}),
+                'diagnosis':forms.Textarea(attrs={'rows': 2,}),
+                'treatment':forms.Textarea(attrs={'rows': 2,})}
         labels = translate_labels(fields)
 
     def __init__(self, *args, **kwargs):
+        print('VisitAnimalForm: args',args,' kwargs: ',kwargs)
         super(VisitAnimalForm, self).__init__(*args, **kwargs)
-        animal = kwargs.pop('initial', None).pop('animal', None)
+        format_widgets_and_add_pk(self)
+        animal = args[0].get('animal', None)
         if not animal is None:
-            self.animal_label = g_form_labels['animal']
+            self.animal_pk = animal.pk
             self.animal_text = str(animal)
 
-class VetForm(BaseForm):
+class VetForm(forms.ModelForm):
     class Meta:
         model=Vet
         fields = ['vet_number']
         labels = translate_labels(fields)
 
-#from django.forms import formset_factory
+    def __init__(self, *args, **kwargs):
+        super(VetForm, self).__init__(*args, **kwargs)
+        format_widgets_and_add_pk(self)
 
-def make_static_text_label(label, text):
-    return '<label> %s: %s </label>' % (label, text)
-
-class VisitForm(BaseForm):
+class VisitForm(forms.ModelForm):
     class Meta:
         model=Visit
         fields = ['start_time', 'end_time', 'visit_reason', 'vet', 'owner', 'items']
@@ -197,66 +129,75 @@ class VisitForm(BaseForm):
                    'owner': forms.HiddenInput()}
         widgets.update(make_time_widgets(time_fields))
 
-        save_after_object = ['visitanimals']
+        save_after_object = ['visitanimals', 'items']
         labels = translate_labels(fields)
 
-    # def getInternalForms(self):
-    #     if hasattr(self, 'formset'):
-    #         return {'formset':self.formset, 'owner_text':self.owner_text,
-    #                 'owner_label':self.owner_label}
-    #     return {}
+    def __init__(self, *args, **kwargs):
+        print('VisitForm-args', args[0])
+        print('VisitForm-kwargs', kwargs)
 
-    def __setFields(self, **kwargs):
-        visit = kwargs.pop('instance',None)
-        if not visit is None:
-            self.setChoiceField(Owner, initial=visit.owner)
-            self.setChoiceField(Vet, initial=visit.vet)
+        #TODO: check that all needed paramers are given
+
+        visit = get_object(self.Meta.model, args[0].get('visit', None))
+        set_instakce_to(visit, kwargs)
+        super(VisitForm, self).__init__(*args, **kwargs)
+        format_widgets_and_add_pk(self, visit)
+
+        #make Owner label
+        if not self.setFields(args[0], visit):
+            print('VisitForm.setFields: Failed')
+
+    def setFields(self, parameters, visit):
+        if visit:
+            self.fields['owner'].initial = visit.owner.pk
+            self.fields['vet'].initial = visit.vet.pk
+            self.owner_label = g_form_labels['owner']
+            self.owner_text = str(visit.owner)
+
+            self.formset = []
+            for visitanimal in visit.visitanimals:
+                self.formset.append(VisitAnimalForm(initial=visitanimal))
+
+            return True
+        else:
+            owner_pk = parameters.get('owner', None)
+            vet_pk = parameters.get('vet', None)
+            #check that we have owner and vet
+            if not (owner_pk and vet_pk):
+                print("VisitForm->setFields: missing pk! owner_pk:", owner_pk, 'vet_pk: ', vet_pk)
+                return False
+
+            #check that objects are in DB and set them to form
+            owner = get_object(owner_pk, Owner)
+            vet = get_object(vet_pk, Vet)
+            if owner and vet:
+                self.fields['owner'].initial = owner_pk
+                self.fields['vet'].initial = vet_pk
+                self.owner_label = g_form_labels['owner']
+                self.owner_text = str(owner)
+            else:
+                print("VisitForm->setFields: object not found: owner", owner, " vet: ", vet)
+                return False
 
             formset = []
-            for visitanimal in visit.visitanimals:
-                formset.append(VisitAnimalForm(instance=visitanimal))
-            self.formset = formset
-
-    def setFields(self, parameters):
-        constructor_dict = {'owner':Owner,'vet':Vet, 'animals':Animal}
-        #parse objects from parameters
-        if not('owner' in parameters and 'vet' in parameters):
-            return False #vet or owner missing abort
-
-        for key in parameters:
-            if key == 'animals':
-                animal_pk_list = parameters['animals'].split(',')
-                formset = []
-                for index in animal_pk_list:
-                    #find animals from database
-                    tmp_animal = self.getObject(index.strip(), constructor_dict[key])
-                    if not tmp_animal is None:
-                        formset.append(VisitAnimalForm(initial={'animal':tmp_animal}))
-                    else:
-                        print("VisitForm->setFields: animal not found from database. id: ", index)
-                        return False
-
-                print("VisitForm-setFields: add form set")
-                self.formset = formset
-            else:
-                #add objects to correct places
-                _pk = self.cleanPk(parameters[key].strip())
-                obj = self.getObject(parameters[key].strip(), constructor_dict[key])
-                if (not _pk is None) and (not obj is None):
-                    print("set initial: ", key, " value: ", _pk)
-                    self.fields[key].initial = _pk
-                    #add owner label to list
-                    if key == 'owner':
-                        self.owner_label = g_form_labels[key]
-                        self.owner_text = str(obj)
+            for index in parameters.get('animals', '').split(','):
+                #ignore empty indexes, should only occure when no animals in parameters
+                if index == '':
+                    continue
+                #find animals from database
+                tmp_animal = get_object(index, Animal)
+                if tmp_animal:
+                    formset.append(VisitAnimalForm({'animal':tmp_animal}))
                 else:
-                    print("VisitForm->setFields: model not found: key: ", key, " pk: ", _pk)
-                    return False #did not find object so abort
-        return True
+                    print("VisitForm->setFields: animal not found from database. id: ", index)
+                    return False
+            self.formset = formset
+            return True
+        return False
 
 
 
-class OwnerForm(BaseForm):
+class OwnerForm(forms.ModelForm):
     class Meta:
         model= Owner
         fields = ['name', 'address', 'phonenumber', 'email', 'other_info','animals', 'archive']
@@ -264,6 +205,10 @@ class OwnerForm(BaseForm):
                     'email': forms.EmailInput()}
         save_after_object = ['animals']
         labels = translate_labels(fields)
+
+    def __init__(self, *args, **kwargs):
+        super(OwnerForm, self).__init__(*args, **kwargs)
+        format_widgets_and_add_pk(self)
 
     def __setFields(self, **kwargs):
         owner = kwargs.pop('instance',None)
@@ -273,7 +218,7 @@ class OwnerForm(BaseForm):
             self.setChoiceField(PostOffice)
 
 
-class AnimalFrom(BaseForm):
+class AnimalFrom(forms.ModelForm):
     class Meta:
         model = Animal
         fields = ['name', 'official_name', 'birthday', 'micro_num',
@@ -284,13 +229,9 @@ class AnimalFrom(BaseForm):
                     'other_info': forms.Textarea(attrs={'rows': 5}),}
         labels = translate_labels(fields)
 
-    # def __init__(self, *args, **kwargs):
-    #     super(AnimalFrom, self).__init__(*args, **kwargs)
-        # Color(name='Musta').save()
-        # Sex(name='Uros').save()
-        # s = Specie(name='Koira')
-        # s.save()
-        # Race(name='Russeli', specie=s).save()
+    def __init__(self, *args, **kwargs):
+        super(AnimalFrom, self).__init__(*args, **kwargs)
+        format_widgets_and_add_pk(self)
 
     def __setFields(self, **kwargs):
         animal = kwargs.pop('instance',None)
@@ -311,27 +252,37 @@ class AnimalFrom(BaseForm):
         # po.save()
 
 
-class SexForm(BaseForm):
+class SexForm(forms.ModelForm):
     class Meta:
         model = Sex
         fields = ['name']
         labels = translate_labels(fields)
 
+    def __init__(self, *args, **kwargs):
+        super(SexForm, self).__init__(*args, **kwargs)
+        format_widgets_and_add_pk(self)
 
-
-class ColorForm(BaseForm):
+class ColorForm(forms.ModelForm):
     class Meta:
         model = Color
         fields = ['name']
         labels = translate_labels(fields)
 
-class SpecieForm(BaseForm):
+    def __init__(self, *args, **kwargs):
+        super(ColorForm, self).__init__(*args, **kwargs)
+        format_widgets_and_add_pk(self)
+
+class SpecieForm(forms.ModelForm):
     class Meta:
         model = Specie
         fields = ['name']
         labels = translate_labels(fields)
 
-class RaceForm(BaseForm):
+    def __init__(self, *args, **kwargs):
+        super(SpecieForm, self).__init__(*args, **kwargs)
+        format_widgets_and_add_pk(self)
+
+class RaceForm(forms.ModelForm):
     class Meta:
         model = Race
         fields = ['name']
@@ -339,8 +290,7 @@ class RaceForm(BaseForm):
 
     def __init__(self, *args, **kwargs):
         super(RaceForm, self).__init__(*args, **kwargs)
-        specie = kwargs.pop('specie','')
-        self.setChoiceField(Specie, name=specie)
+        format_widgets_and_add_pk(self)
 
 class AuthForm(AuthenticationForm):
     pass

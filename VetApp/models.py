@@ -71,18 +71,18 @@ class Operation(models.Model):
 
 class VisitAnimal(models.Model):
     animal = models.ForeignKey('Animal', on_delete=models.CASCADE)
-    operations = models.ManyToManyField(Operation)
-    items = models.ManyToManyField(Item)
+    operations = models.ManyToManyField(Operation, blank=True)
+    items = models.ManyToManyField(Item, blank=True)
 
     anamnesis = models.CharField(max_length=1000, blank=True)
     status = models.CharField(max_length=1000, blank=True)
     diagnosis = models.CharField(max_length=1000, blank=True)
     treatment = models.CharField(max_length=1000, blank=True)
 
-    readonly_fields=('animal',)
+    #readonly_fields=('animal',)
 
-    class Meta:
-        ordering = ["animal"]
+    # class Meta:
+    #     ordering = ["animal"]
 
     def getText(self=None):
         return 'visitAnimal'
@@ -96,8 +96,8 @@ class Visit(models.Model):
     vet = models.ForeignKey('Vet', on_delete=models.CASCADE)
     owner = models.ForeignKey('Owner', on_delete=models.CASCADE)
 
-    visitanimals = models.ManyToManyField(VisitAnimal)
-    items = models.ManyToManyField(Item)
+    visitanimals = models.ManyToManyField(VisitAnimal, blank=True, null=True)
+    items = models.ManyToManyField(Item, blank=True, null=True)
 
     archive = models.BooleanField(default=False)
     def getText(self=None):
