@@ -2,10 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 
 from VetApp.items import *
-
-
-#class Model(models.Model):
-
+from datetime import datetime
 
 class Vet(models.Model):
     #user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -65,7 +62,7 @@ class Animal(models.Model):
 
 
 class Operation(models.Model):
-    pass
+    pass #name = models.CharField(max_length=255)
 
 
 
@@ -87,7 +84,9 @@ class VisitAnimal(models.Model):
     def getText(self=None):
         return 'visitAnimal'
 
-from datetime import datetime
+
+
+
 class Visit(models.Model):
     visit_reason = models.CharField(max_length=1000, blank=True)
     start_time =  models.DateTimeField(blank=True, null=True)
@@ -97,12 +96,16 @@ class Visit(models.Model):
     owner = models.ForeignKey('Owner', on_delete=models.CASCADE)
 
     visitanimals = models.ManyToManyField(VisitAnimal, blank=True, null=True)
-    items = models.ManyToManyField(Item, blank=True, null=True)
+    items = models.ManyToManyField(Item, through="VisitItems", blank=True, null=True)
 
     archive = models.BooleanField(default=False)
     def getText(self=None):
         return 'visit'
 
+class VisitItems(models.Model):
+    Item = models.ForeignKey(Item)
+    visit = models.ForeignKey(Visit)
+    count = models.IntegerField(default=1)
 
 class Owner(models.Model):
     name = models.CharField(max_length=100)

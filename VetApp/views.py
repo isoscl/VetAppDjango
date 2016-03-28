@@ -10,6 +10,9 @@ from VetApp.models import *
 
 from VetApp import models
 
+import json
+from django.http import HttpResponse
+
 # class SpecieView(BaseView):
 #     def _get(self):
 #         self.context['specie_form'] = SpecieForm()
@@ -23,6 +26,28 @@ from VetApp import models
 #     def post(self, request):
 #         form=RaceForm(request.POST, specie=request.specie_name)
 
+def search_base(request, model_class):
+        if request.is_ajax():
+            q = request.GET.get('term', '')
+            objs = model_class.objects.filter(name__icontains = q )[:20]
+            results = []
+            for obj in objs:
+                obj_json = {}
+                obj_json['id'] = obj.pk
+                obj_json['label'] = obj.name
+                obj_json['value'] = obj.name
+                results.append(obj_json)
+            data = json.dumps(results)
+        else:
+            data = 'fail'
+        mimetype = 'application/json'
+        return HttpResponse(data, mimetype)
+
+def operations_search(request):
+    pass #return search_base(request, Operation)
+
+def items_search(request):
+    return search_base(request, Item)
 
 class BaseView(View):
     def get(self, request):
@@ -36,7 +61,6 @@ class BaseView(View):
         return self._post()
 
     def initView(self):
-
         if self.request.user and self.request.user.is_authenticated:
             self.context = {'auth_form':AuthForm()}
         else:
@@ -117,7 +141,7 @@ class BaseView(View):
                     setattr(obj, label_name, self.context[form_name].cleaned_data[label_name])
             obj.save()
             if len(save_after_object_variables) > 0:
-                self.context[form_name].saveRelatedObjects()
+                #self.context[form_name].saveRelatedObjects()
 
                 for label_name in save_after_object_variables:
                     setattr(obj, label_name, self.context[form_name].cleaned_data[label_name])

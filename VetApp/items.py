@@ -24,6 +24,9 @@ class Item(models.Model):
 
     specie_description =  models.ManyToManyField(SpecieDescription)
 
+    def __str__(self):
+        return "%s" % (self.name)
+
     def getALV(self):
         return self.price * self.getALVPercent/100.
 

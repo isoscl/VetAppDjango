@@ -26,4 +26,6 @@ urlpatterns = [
     url(r'^item/$', views.ItemView.as_view(), name='Item'),
     url(r'^visit/$', views.VisitView.as_view(), name='Visit'),
     url(r'^vet/$', views.VetView.as_view(), name='Vet'),
+    url(r'^api/items/', views.items_search, name='search_items'),
+    url(r'^api/operations/', views.operations_search, name='search_operations'),
 ]

@@ -43,10 +43,12 @@ def get_object(_pk, obj):
     _pk = clean_pk(_pk)
     if _pk:
         try:
-            return obj.objects.get(id=int(_pk))
+            return obj.objects.get(pk=int(_pk))
         except ObjectDoesNotExist:
             return None #TODO: this error should be handled
     return None
+
+
 
 def format_widgets_and_add_pk(self, obj=None):
     _pk = None
@@ -103,10 +105,17 @@ class VisitAnimalForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         print('VisitAnimalForm: args',args,' kwargs: ',kwargs)
+        #never give args for parent TODO: check if this is correct
+        #convert animal object to int presenting it pk
+        animal = None
+        if len(args) > 0:
+            animal = args[0].get('animal', None)
+            if animal and not (type(animal) is int):
+                args[0]['animal'] = animal.pk
+
         super(VisitAnimalForm, self).__init__(*args, **kwargs)
         format_widgets_and_add_pk(self)
-        animal = args[0].get('animal', None)
-        if not animal is None:
+        if animal:
             self.animal_pk = animal.pk
             self.animal_text = str(animal)
 
@@ -120,27 +129,69 @@ class VetForm(forms.ModelForm):
         super(VetForm, self).__init__(*args, **kwargs)
         format_widgets_and_add_pk(self)
 
+
+class VisitItemForm(forms.Form):
+    # class Meta:
+    #     fields = ['name', 'count']
+    pk = forms.CharField(widget=forms.HiddenInput(),required=False)
+    item_pk = forms.CharField(widget=forms.HiddenInput())
+    count = forms.DecimalField()
+
+    def __fill_item_data(self,item):
+        if item:
+            self.item_pk = item.pk
+            self.item_name = item.name
+            self.item_price = item.price
+            return True
+        else:
+            print("VisitItemForm.__fill_item_data. item is None!")
+            return False
+
+    def __init__(self, *args, **kwargs):
+        print('VisitItemForm: ', args , 'kwargs', kwargs)
+        visititem = kwargs.pop('instance', None)
+        if visititem:
+            self.__fill_item_data(visititem.item)
+            args = ({'pk':visititem.pk,'item_pk':visititem.item.pk,
+            'count':visititem.count},)
+        else:
+            if len(args) > 0:
+                item = args[0].get('item')
+                count = args[0].get('count', 1)
+                self.__fill_item_data(item)
+                args = ({'pk':None,'item_pk':item.pk,
+                'count':count},)
+            else:
+                print('VisitItemForm args length is zero!')
+
+        super(VisitItemForm, self).__init__(*args, **kwargs)
+
+
 class VisitForm(forms.ModelForm):
     class Meta:
         model=Visit
-        fields = ['start_time', 'end_time', 'visit_reason', 'vet', 'owner', 'items']
-        time_fields = {'start_time':'datetime-local', 'end_time':'datetime-local'}
+        fields = ['start_time', 'end_time', 'visit_reason', 'vet', 'owner']
+        time_fields = {'start_time':'datetime-local','end_time':'datetime-local'}
         widgets = {'visit_reason':forms.Textarea(attrs={'rows': 5,}),
-                   'owner': forms.HiddenInput()}
+                   'owner': forms.HiddenInput(),}
         widgets.update(make_time_widgets(time_fields))
 
         save_after_object = ['visitanimals', 'items']
         labels = translate_labels(fields)
 
     def __init__(self, *args, **kwargs):
-        print('VisitForm-args', args[0])
+        print('VisitForm-args', *args)
         print('VisitForm-kwargs', kwargs)
 
         #TODO: check that all needed paramers are given
 
-        visit = get_object(self.Meta.model, args[0].get('visit', None))
+        visit = None
+        if len(args) > 0:
+            visit = get_object(self.Meta.model, args[0].get('id', None))
         set_instakce_to(visit, kwargs)
         super(VisitForm, self).__init__(*args, **kwargs)
+
+
         format_widgets_and_add_pk(self, visit)
 
         #make Owner label
@@ -148,11 +199,22 @@ class VisitForm(forms.ModelForm):
             print('VisitForm.setFields: Failed')
 
     def setFields(self, parameters, visit):
+        self.items = []
+
+        obj = get_object(1, Item)
+
+        self.visititem_forms = [VisitItemForm({'item':obj, 'count':1}),
+        VisitItemForm({'item':obj, 'count':1}),VisitItemForm({'item':obj, 'count':1})
+        ,VisitItemForm({'item':obj, 'count':1}), VisitItemForm({'item':obj, 'count':1}),VisitItemForm({'item':obj, 'count':1})
+        ,VisitItemForm({'item':obj, 'count':1})]
+
         if visit:
             self.fields['owner'].initial = visit.owner.pk
             self.fields['vet'].initial = visit.vet.pk
             self.owner_label = g_form_labels['owner']
             self.owner_text = str(visit.owner)
+
+            self.items = visit.items
 
             self.formset = []
             for visitanimal in visit.visitanimals:

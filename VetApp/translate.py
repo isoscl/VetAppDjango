@@ -18,7 +18,8 @@ g_form_placeholders = {'sex':'Sukupuoli', 'color':'Väri', 'specie':'Laji',
 'visitanimals':'Käynnin eläimet', 'items':'Tuotteet', 'animals':'Eläimet',
 'animal':'Eläin','operations':'Toimenpiteet','items':'Tuotteet',
 'anamnesis':'Anamneesi','status':'Status','diagnosis':'Diagnoosi',
-'treatment':'Hoito','vet_number':'Eläinlääkäri numero','text':'Teksti'}
+'treatment':'Hoito','vet_number':'Eläinlääkäri numero','text':'Teksti',
+'count':'Määrä'}
 
 g_form_labels = g_form_placeholders
 
