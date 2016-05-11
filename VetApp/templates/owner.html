@@ -1,6 +1,16 @@
 {% extends "site_base.html" %}
 
 {% block maincontent %}
+
+  <script>
+    //This is sort of hax to get multiselect work like table
+    window.onload = function() {
+      document.getElementById('userform').onsubmit = function() {
+        $('#id_animals option').prop('selected', true);
+      };
+    }
+  </script>
+
     <div>
         <h2> Omistaja </h2>
         {% if owner_form.errors %}
@@ -10,7 +20,7 @@
         </div>
         {% endif %}
 
-        <form method="POST" form class="niceform">
+        <form method="POST" id="userform" form class="niceform">
         {% csrf_token %}
         <div class="form_group">
         {{owner_form}}
@@ -18,4 +28,6 @@
         <button class="btn btn-lg btn-primary " type="submit">Tallenna</button>
         </form>
     </div>
+<!-- $("#myselect").find("option").attr("selected", "selected").val(yourValue); -->
+
 {% endblock %}

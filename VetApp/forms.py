@@ -9,6 +9,8 @@ from VetApp.models import *
 
 from datetime import datetime
 
+import logging
+
 def translate_labels(field_list):
     translate_dict = {}
     for field_name in field_list:
@@ -30,7 +32,7 @@ def make_time_widgets(time_fields):
         widgets[key] = widget
     return widgets
 
-def set_instakce_to(obj, kwargs):
+def set_instance_to(obj, kwargs):
     if obj:
         kwargs.update({'instance': obj})
 
@@ -41,23 +43,37 @@ def clean_pk(_pk):
 
 def get_object(_pk, obj):
     _pk = clean_pk(_pk)
-    if _pk:
+    if _pk != None:
         try:
             return obj.objects.get(pk=int(_pk))
         except ObjectDoesNotExist:
+            print("Can not find object:", obj, " with id:", _pk)
             return None #TODO: this error should be handled
     return None
 
 
 
-def format_widgets_and_add_pk(self, obj=None):
+def set_pk(self, obj):
     _pk = None
     if obj:
         _pk = obj.pk
-    for field in self.Meta().fields:
-        self.fields[field].widget.attrs.update({'class':'form-control','placeholder':g_form_placeholders[field]})
-    self.fields['pk'] = forms.IntegerField(widget = forms.HiddenInput(),
-    required=False, initial=_pk)
+    self.fields['pk'] = forms.IntegerField(widget = forms.HiddenInput(), required=False, initial=_pk)
+
+
+def format_widgets(self):
+    if hasattr(self,'Meta'): #TODO: remove this old when changed to new
+        for field in self.Meta().fields:
+            self.fields[field].widget.attrs.update({'class':'form-control','placeholder':g_form_placeholders[field]})
+    else:
+        for field in self.fields:
+            self.fields[field].widget.attrs.update({'class':'form-control','placeholder':g_form_placeholders[field]})
+
+def model_attrs_to_tuple(model):
+    args = {}
+    for key in model._meta.get_fields():
+        if hasattr(model,key.name):
+            args[key.name] = getattr(model,key.name)
+    return (args,) #"cast" dict to tuple
 
 
 class SpecieDescriptionForm(forms.ModelForm):
@@ -68,7 +84,7 @@ class SpecieDescriptionForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(SpecieDescriptionForm, self).__init__(*args, **kwargs)
-        format_widgets_and_add_pk(self)
+        format_widgets(self)
 
 
 class MoneyInput(forms.widgets.NumberInput):
@@ -89,7 +105,7 @@ class ItemForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(ItemForm, self).__init__(*args, **kwargs)
-        format_widgets_and_add_pk(self)
+        format_widgets(self)
 
 class VisitAnimalForm(forms.ModelForm):
     class Meta:
@@ -114,7 +130,7 @@ class VisitAnimalForm(forms.ModelForm):
                 args[0]['animal'] = animal.pk
 
         super(VisitAnimalForm, self).__init__(*args, **kwargs)
-        format_widgets_and_add_pk(self)
+        format_widgets(self)
         if animal:
             self.animal_pk = animal.pk
             self.animal_text = str(animal)
@@ -127,7 +143,7 @@ class VetForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(VetForm, self).__init__(*args, **kwargs)
-        format_widgets_and_add_pk(self)
+        format_widgets(self)
 
 
 class VisitItemForm(forms.Form):
@@ -188,15 +204,17 @@ class VisitForm(forms.ModelForm):
         visit = None
         if len(args) > 0:
             visit = get_object(self.Meta.model, args[0].get('id', None))
-        set_instakce_to(visit, kwargs)
+        set_instance_to(visit, kwargs)
+
         super(VisitForm, self).__init__(*args, **kwargs)
 
-
-        format_widgets_and_add_pk(self, visit)
+        format_widgets(self)
+        set_pk(self, visit)
 
         #make Owner label
-        if not self.setFields(args[0], visit):
+        if len(args) == 0 or not self.setFields(args[0], visit):
             print('VisitForm.setFields: Failed')
+            #TODO: set error message
 
     def setFields(self, parameters, visit):
         self.items = []
@@ -258,8 +276,56 @@ class VisitForm(forms.ModelForm):
         return False
 
 
+class OwnerForm(forms.Form):
+    name = forms.CharField(label=g_form_labels['name'], max_length=100)
+    address = forms.CharField(label=g_form_labels['address'], max_length=100, required=False)
 
-class OwnerForm(forms.ModelForm):
+    #  = models.ForeignKey('PostOffice',  on_delete=models.CASCADE, blank=True, null=True)
+    #post_office = forms.ModelChoiceField(queryset=PostOffice.objects.all())
+    animals = forms.ModelMultipleChoiceField(queryset=Animal.objects,required = False)
+
+    phonenumber = forms.CharField(label=g_form_labels['phonenumber'], max_length=100, required=False)
+    email = forms.CharField(label=g_form_labels['address'], max_length=100, required=False, widget=forms.EmailInput())
+    other_info = forms.CharField(label=g_form_labels['other_info'], max_length=500, required=False)
+
+    archive = forms.BooleanField(initial=False, required = False) #if reguired will say it is required
+    id = forms.CharField(widget = forms.HiddenInput(), required = False)
+
+
+
+    def __init__(self, *args, **kwargs):
+
+        print("args: ", args)
+        print("kwargs: ", kwargs)
+
+        animal_query = Animal.objects
+        if len(args) == 1:
+            owner = get_object(args[0].get('id', None),Owner)
+
+            # owner.animals = [get_object(args[0].get('id', None),Animal)]
+            # owner.save()
+
+            if owner:
+                args = model_attrs_to_tuple(owner)
+                animal_query = args[0]['animals']
+                args[0]['animals'] = None
+                print("Args are: ",args)
+            else:
+                logging.error("Owner not found")
+                pass #TODO:error!
+        else:
+            pass #pass on arguments as they are
+
+        super(OwnerForm, self).__init__(*args, **kwargs)
+
+        #self.fields['animals'] = args[0]['animals']
+        print("animal query: ", animal_query)
+        self.fields['animals'].queryset = animal_query
+
+        format_widgets(self)
+        print(self.fields)
+
+class OwnerForm_old(forms.ModelForm):
     class Meta:
         model= Owner
         fields = ['name', 'address', 'phonenumber', 'email', 'other_info','animals', 'archive']
@@ -268,16 +334,36 @@ class OwnerForm(forms.ModelForm):
         save_after_object = ['animals']
         labels = translate_labels(fields)
 
-    def __init__(self, *args, **kwargs):
-        super(OwnerForm, self).__init__(*args, **kwargs)
-        format_widgets_and_add_pk(self)
 
-    def __setFields(self, **kwargs):
-        owner = kwargs.pop('instance',None)
-        if not owner == None:
-            self.setChoiceField(PostOffice, initial=owner.post_office)
-        else:
-            self.setChoiceField(PostOffice)
+
+    def __init__(self, *args, **kwargs):
+        owner = None
+
+        print(args)
+
+        if len(args) > 0:
+            owner = get_object(args[0].get('id', None),self.Meta.model)
+            args = (self.getArgsFromModel(owner),)
+            #django object to list
+            args[0]['animals'] = args[0]['animals'].all()
+            args[0]['pk'] = owner.pk
+            print("Owner animal list: ",args[0]['animals'])
+
+        super(OwnerForm, self).__init__(*args, **kwargs)
+        format_widgets(self)
+
+        print("Owner fields: ",self.fields)
+        #help(self.fields["animals"])
+
+#self.fields['pk'] = forms.IntegerField(widget = forms.HiddenInput(),
+#required=False, initial=_pk)
+
+    # def __setFields(self, **kwargs):
+    #     owner = kwargs.pop('instance',None)
+    #     if not owner == None:
+    #         self.setChoiceField(PostOffice, initial=owner.post_office)
+    #     else:
+    #         self.setChoiceField(PostOffice)
 
 
 class AnimalFrom(forms.ModelForm):
@@ -293,7 +379,7 @@ class AnimalFrom(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(AnimalFrom, self).__init__(*args, **kwargs)
-        format_widgets_and_add_pk(self)
+        format_widgets(self)
 
     def __setFields(self, **kwargs):
         animal = kwargs.pop('instance',None)
@@ -322,7 +408,7 @@ class SexForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(SexForm, self).__init__(*args, **kwargs)
-        format_widgets_and_add_pk(self)
+        format_widgets(self)
 
 class ColorForm(forms.ModelForm):
     class Meta:
@@ -332,7 +418,7 @@ class ColorForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(ColorForm, self).__init__(*args, **kwargs)
-        format_widgets_and_add_pk(self)
+        format_widgets(self)
 
 class SpecieForm(forms.ModelForm):
     class Meta:
@@ -342,7 +428,7 @@ class SpecieForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(SpecieForm, self).__init__(*args, **kwargs)
-        format_widgets_and_add_pk(self)
+        format_widgets(self)
 
 class RaceForm(forms.ModelForm):
     class Meta:
@@ -352,7 +438,7 @@ class RaceForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(RaceForm, self).__init__(*args, **kwargs)
-        format_widgets_and_add_pk(self)
+        format_widgets(self)
 
 class AuthForm(AuthenticationForm):
     pass
