@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.conf.urls import include, url
 from django.contrib import admin
-from VetApp import views
+from VetApp import views, ajax
 
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
@@ -25,7 +25,11 @@ urlpatterns = [
     url(r'^$', views.IndexView.as_view(), name='VetApp'),
     url(r'^item/$', views.ItemView.as_view(), name='Item'),
     url(r'^visit/$', views.VisitView.as_view(), name='Visit'),
+<<<<<<< HEAD
     url(r'^vet/$', views.VetView.as_view(), name='Vet'),
     url(r'^api/items/', views.items_search, name='search_items'),
     url(r'^api/operations/', views.operations_search, name='search_operations'),
+=======
+    url(r'ajax_url/$', ajax.ajax_view, name='ajax_view')
+>>>>>>> Started ajax functionality
 ]
