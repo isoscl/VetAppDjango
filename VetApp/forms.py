@@ -76,6 +76,15 @@ def model_attrs_to_tuple(model):
     return (args,) #"cast" dict to tuple
 
 
+def create_table(table_name, header_list):
+    html = '''<table id="{0}" class="table table-striped table-hover table-condensed"> <thead>
+    <tr> <th style="display:none" width="0%"></th>'''.format(table_name)
+
+    for i in range(1, len(header_list)):
+        html += '<th >%s</th>' % g_form_labels[header_list[i]]
+
+    return html + '''</tr> </thead> <tbody> </tbody> </table>'''
+
 class SpecieDescriptionForm(forms.ModelForm):
     class Meta:
         model = SpecieDescription

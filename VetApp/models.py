@@ -4,6 +4,10 @@ from django.contrib.auth.models import User
 from VetApp.items import *
 from datetime import datetime
 
+
+def clean_str(_str):
+    return '' if _str is None else str(_str)
+
 class Vet(models.Model):
     #user = models.OneToOneField(User, on_delete=models.CASCADE)
     vet_number = models.CharField(max_length=25)
@@ -59,6 +63,19 @@ class Animal(models.Model):
         if self.birthday:
             date = self.birthday.strftime('%d.%m.%Y')
         return ("%s, %s, %s" % (self.name or '', self.official_name or '', date))
+
+    def table_header_string_list(self=None):
+        return ['pk', 'name','specie','race','sex','birthday']
+
+    def to_dict(self):
+        return_dict = {}
+        for key in self.table_header_string_list():
+            return_dict[key] = clean_str(getattr(self, key))
+        return return_dict
+        # print("get attr Animal: ", getattr(self, 'name'))
+        # return {'name': self.name, 'specie':clean_str(self.specie),
+        # 'race':clean_str(self.race), 'sex':clean_str(self.sex),
+        # 'birthday':clean_str(self.birthday)}
 
 
 class Operation(models.Model):
@@ -185,16 +202,15 @@ class Sex(models.Model):
         return self.name
 
 class Specie(models.Model):
-    #specie = models.ForeignKey('Specie', on_delete=models.CASCADE,)
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=50)#, unique=True) #TODO: Make unique
     def getText(self=None):
         return 'specie'
-    def toString(self):
+    def __str__(self):
         return self.name
 
 class Race(models.Model):
     specie = models.ForeignKey('Specie', on_delete=models.CASCADE,)
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=50)#, unique=True) #TODO: Make unique
     def getText(self=None):
         return 'race'
     def toString(self):

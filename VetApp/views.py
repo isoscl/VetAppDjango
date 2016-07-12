@@ -71,6 +71,9 @@ class BaseView(View):
         else:
             self.context = {'auth_form':''}
 
+        self.context['animal_table'] = create_table('animal_table',models.Animal.table_header_string_list())
+
+
         if self.request.session.__contains__('init'):
             self.request.session.__setitem__('init', True)
 
@@ -87,6 +90,9 @@ class BaseView(View):
         #print(self.context[form_name])
 
         # print("FORM is: ", self.context[form_name])
+
+        #create_table
+
 
         return render(self.request, html_path, self.context)
 

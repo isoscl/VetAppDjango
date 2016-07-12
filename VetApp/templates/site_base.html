@@ -46,28 +46,28 @@
             {% block maincontent %}
             {% endblock %}
 
-        <button onClick="alert('You clicked the button using Javascript.');">
-               Click Me - I run Javascript
-        </button>
+            <div class="ui-widget">
+              <label for="animal-tags">Tags: </label>
+              <input id="animal-tags">
+            <button id="add-btn" value=""> Add </button>
+            <button id="about-btn2"> Make query!</button>
+            </div>
 
-        <button id="about-btn"> Click Me - I'm Javascript on Speed</button>
+            {{ animal_table | safe }} <!-- add safe tag to allow raw html -->
 
-        <button id="about-btn2"> Make query!</button>
 
-        <p>This is a example</p>
-
-        <p>This is another example</p>
 
 
         </div>
     </div>
 
-    <!-- Bootstrap core JavaScript
-    ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     {% load staticfiles %}
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="{% static "js/jasny-bootstrap.min.js" %}"></script>
     <script src="{% static "js/search-jquery.js" %}"></script>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.0/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/ui/1.12.0/jquery-ui.js"></script>
     <!-- <script src="../../static/bootstrap/js/docs.min.js"></script> -->
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
     <!-- <script src="../../static/bootstrap/js/ie10-viewport-bug-workaround.js"></script> -->
