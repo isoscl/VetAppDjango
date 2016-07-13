@@ -8,6 +8,16 @@ from datetime import datetime
 def clean_str(_str):
     return '' if _str is None else str(_str)
 
+def model_to_dict(model):
+    return_dict = {}
+    for key in model.table_header_string_list():
+        return_dict[key] = clean_str(getattr(model, key))
+    return_dict['type'] = model.__class__.__name__
+    return return_dict
+
+__all__ = ['Vet', 'PostOffice', 'Animal', 'Operation', 'VisitAnimal', 'Visit',
+'VisitItems', 'Owner', 'Bill', 'Color', 'Sex', 'Specie', 'Race']
+
 class Vet(models.Model):
     #user = models.OneToOneField(User, on_delete=models.CASCADE)
     vet_number = models.CharField(max_length=25)
@@ -17,7 +27,7 @@ class Vet(models.Model):
 
     def getText(self=None):
         return 'vet'
-    def toString(self):
+    def __str__(self):
         return str(self.vet_number)
 # class Marking(models.Model):
 #     self.value = {'micro_number':'Mikrosiru'}
@@ -31,16 +41,11 @@ class PostOffice(models.Model):
 
     def getText(self=None):
         return 'post_office'
-    def toString(self):
+    def __str__(self):
         return "%s, %i" % (self.name, self.number)
 
 
-def model_to_dict(model):
-    return_dict = {}
-    for key in model.table_header_string_list():
-        return_dict[key] = clean_str(getattr(model, key))
-    return_dict['type'] = model.getText()
-    return return_dict
+
 
 class Animal(models.Model):
     name = models.CharField(max_length=50)
@@ -78,8 +83,6 @@ class Animal(models.Model):
 class Operation(models.Model):
     pass #name = models.CharField(max_length=255)
 
-
-
 class VisitAnimal(models.Model):
     animal = models.ForeignKey('Animal', on_delete=models.CASCADE)
     operations = models.ManyToManyField(Operation, blank=True)
@@ -97,9 +100,6 @@ class VisitAnimal(models.Model):
 
     def getText(self=None):
         return 'visitAnimal'
-
-
-
 
 class Visit(models.Model):
     visit_reason = models.CharField(max_length=1000, blank=True)
@@ -136,12 +136,11 @@ class Owner(models.Model):
     archive = models.BooleanField(default=False)
     def getText(self=None):
         return 'owner'
-    def toString(self):
+    def __str__(self):
         return self.name
 
     def __str__(self):
         return "%s, %s" % (self.name, self.address)
-
 
 class Bill(models.Model):
     visit = models.ForeignKey('Visit', on_delete=models.CASCADE)
@@ -184,7 +183,7 @@ class Color(models.Model):
     name = models.CharField(max_length=50)
     def getText(self=None):
         return 'color'
-    def toString(self):
+    def __str__(self):
         return self.name
 '''
     This class helps us to handle with different sex names between species
@@ -195,7 +194,7 @@ class Sex(models.Model):
     name = models.CharField(max_length=50)
     def getText(self=None):
         return 'sex'
-    def toString(self):
+    def __str__(self):
         return self.name
 
 class Specie(models.Model):
@@ -210,5 +209,5 @@ class Race(models.Model):
     name = models.CharField(max_length=50)#, unique=True) #TODO: Make unique
     def getText(self=None):
         return 'race'
-    def toString(self):
+    def __str__(self):
         return self.name

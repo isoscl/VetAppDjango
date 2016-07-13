@@ -7,6 +7,9 @@ class ALV():
     class2 = 10
     class3 = 14
 
+__all__ = ['SpecieDescription','Item','Medicine',
+'Vaccine','Feed','DrugUsage','Drug']
+
 class SpecieDescription(models.Model):
     specie = models.ForeignKey('Specie', on_delete=models.CASCADE)
     text = models.TextField(max_length=1000)

@@ -19,7 +19,7 @@ def makeAnimalQuery(search_string):
     return models.Animal.objects.filter(name__icontains=search_string) | \
     models.Animal.objects.filter(official_name__icontains=search_string)
 
-def search_objects(request, gen_query, header_list):
+def search_objects(request, gen_query):
     if(request.POST):
         #parse parameters from request
         search_string = request.POST['search_string']
@@ -31,12 +31,24 @@ def search_objects(request, gen_query, header_list):
         else:
             objects = convert_to_dict(gen_query(search_string)[start:(start+int(request.POST['max']))])
 
-        return JsonResponse({'objects':objects,'header_list':header_list})
+        return JsonResponse({'objects':objects})
     else:
         return JsonResponse({'error':'Unsupported request', 'error_text':'Only POST is supported'})
 
 def get_animals(request):
-    return search_objects(request, makeAnimalQuery, models.Animal.table_header_string_list())
+    return search_objects(request, makeAnimalQuery)
+
+def get_header(request):
+    if(request.GET):
+        _type = request.GET['type']
+        if _type in models.__all__:
+            return JsonResponse({'header_list':eval('models.'+ _type).table_header_string_list()})
+        else:
+            return JsonResponse({'error':'Unsupported object type',
+            'error_text':'ERROR: get_header(), Unsupported header type: '+ str(_type) +'. Supported types are:' + str(models.__all__)})
+
+    else:
+        return JsonResponse({'error':'Unsupported request', 'error_text':'Only GET is supported'})
 
 
 def ajax_view(request):

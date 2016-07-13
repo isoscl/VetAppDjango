@@ -6,6 +6,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from VetApp.translate import g_login_text, g_form_labels, g_form_placeholders,g_count_type_list
 
 from VetApp.models import *
+from VetApp.items import *
 
 from datetime import datetime
 
@@ -77,13 +78,14 @@ def model_attrs_to_tuple(model):
 
 
 def create_table(table_name, header_list):
-    html = '''<table id="{0}" class="table table-striped table-hover table-condensed"> <thead>
-    <tr> <th style="display:none" width="0%"></th>'''.format(table_name)
+    html = '''<table id="{0}" class="table table-striped table-hover table-condensed">
+        <tr>
+            <th style="display:none" width="0%"></th>'''.format(table_name)
 
     for i in range(1, len(header_list)):
         html += '<th >%s</th>' % g_form_labels[header_list[i]]
 
-    return html + '''</tr> </thead> <tbody> </tbody> </table>'''
+    return html + '''<th ></th></tr> </table>'''
 
 class SpecieDescriptionForm(forms.ModelForm):
     class Meta:

@@ -29,14 +29,9 @@ $.ajaxSetup({
 });
 
 
-// <tr>
-//     <th><a href="/animal?id=1" target="_blank">asd </a></th>
-//     <th>fdhg</th>
-//     <th class="text-center">3 </th>
-//     <th class="text-center">3 </th>
-//     <th class="text-center">3 </th>
-//     <th class="text-center">3 </th>
-// </tr>
+function delete_row(e){
+  console.log("event is:" +e);
+}
 
 /*
   table_name should be in format "type_whrite_anything_here"
@@ -46,30 +41,36 @@ $.ajaxSetup({
   insert_top, set True if want to set new items in top of list
   link, if true makes link to address that object
 */
-function insertRowToTable(table_name, object_list, header_list, link){
+function insertObjectToTable(table_name, object, link){
   var table = document.getElementById(table_name);
+  var row = table.insertRow(-1);
 
-  for(var key in object_list){
-    var obj = object_list[key];
-    var row = table.insertRow(-1);
-
+  get_header_list(object['type'], function(header_list){
+    console.log("got header_list: " + header_list)
     //make hidden pk column
     var cell = row.insertCell(0);
-    cell.innerHTML = obj[header_list[0]];
+    cell.innerHTML = object['pk'];
     cell.style = 'display:none'
-
     //make link to object if wanted
     var i = 1;
     if(link){ //make
-      row.insertCell(i).innerHTML = '<a target="_blank" href="/'+ table_name.split('_')[0] +'/?id='+obj['pk']+'">' + obj[header_list[i]] + '</a>'
+      row.insertCell(i).innerHTML = '<a target="_blank" href="/'+ table_name.split('_')[0] +'/?id='+object['pk']+'">' + object[header_list[i]] + '</a>'
       i++;
     }
-
     //insert data to row
     for(; i < header_list.length; i++){
-      row.insertCell(i).innerHTML = obj[header_list[i]]
+      row.insertCell(i).innerHTML = object[header_list[i]]
     }
+    row.insertCell(i).innerHTML = '<button onclick="$(this).closest(\'tr\').remove()";>X</button>'
+  });
+}
 
+
+
+function insertObjectsToTable(table_name, object_list, link){
+  for(var key in object_list){
+    console.log("inserting object to table")
+    insertObjectToTable(table_name, object_list[key], link);
   }
 }
 
@@ -93,81 +94,99 @@ function make_ajax_query(url, type, data, response_func, error_func){
   });
 }
 
+function make_ajax_path(_type){
+  return '/ajax_'+_type.toLowerCase()+'/';
+}
+
+function get_header_list(_type, return_func){
+  var header_list = JSON.parse(localStorage.getItem(_type+"-header-list"));
+  console.log("local header list is: " + header_list)
+  if(header_list === null){
+    console.log("no locale found, making query");
+    make_ajax_query(make_ajax_path('header'), 'GET', {type:_type}, function(response2){
+      //Store header-list to localdatabase
+      console.log("got: "+ response2);
+      localStorage.setItem(_type+"-header-list", JSON.stringify(response2.header_list));
+      return_func(response2.header_list);
+    });
+  }else{
+    console.log("Found local list");
+    return_func(header_list)
+  }
+}
 
 function queryObjects(_type, search_string, start, _max, return_func){
   var payload = {start:start, max:_max, search_string:search_string};
-  make_ajax_query('/ajax_'+_type+'/', 'POST', payload, function(response){
-    //save header_list for further user
-    localStorage.setItem(_type+"-header-list", JSON.stringify(response.header_list));
-    return_func(response.objects)
+  //make query to get objects
+  console.log("making call to get objects")
+  make_ajax_query(make_ajax_path(_type), 'POST', payload, function(response){
+    //check if we allready have loaded header-lists for this object type
+    console.log("Got objects, responce is: " + response);
+    //check that related headel-list is loaded from server
+    if(localStorage.getItem(_type+"-header-list") === null){
+      make_ajax_query(make_ajax_path('header'), 'GET', {type:_type}, function(response2){
+        //Store header-list to localdatabase
+        localStorage.setItem(_type+"-header-list", JSON.stringify(response2.header_list));
+        return_func(response.objects);
+      });
+    }else{
+      return_func(response.objects);
+    }
   });
 }
 
-function test_query(request, response){
+
+
+function object_query(request, response, _type){
   console.log(request.term);
 
-  var my_json = {start:0,
-  max:-1,
-  search_string:request.term,}
-
-  queryObjects('animal',request.term,0,-1, function(objects){
-    console.log('queryObjects returned: ' + objects);
-  });
-
-
-
-  make_ajax_query("/ajax_url/", 'POST', my_json, function(response2){
+  queryObjects(_type,request.term,0,-1, function(_objects){
+    console.log('queryObjects returned: ' + _objects);
     objects = []
-
-    console.log(response2)
-
-    for(var i in response2.objects){
-      objects.push({"label":response2.objects[i].name, "data":response2.objects[i]})
+    for(var i in _objects){
+      objects.push({"label":_objects[i].name, "data":_objects[i]})
     }
-
-    //save header_list for further user
-    localStorage.setItem("animal-header-list", JSON.stringify(response2.header_list));
-
     response(objects)
   });
 }
 
-// make_ajax_query("/ajax_url/", 'POST', my_json,)
+function animal_query(request, response){
+  object_query(request, response, 'Animal');
+}
 
 $(document).ready(function() {
-
-  $("#about-btn").click( function(event) {
-    alert("You clicked the button using JQuery!");
-  });
-
-  $('#mytable tbody').on( 'click', 'tr', function () {
-      console.log($(this));
-
-      // if ( $(this).hasClass('highlight') ) {
-      //     $(this).removeClass('highlight');
-      // }
-      // else {
-      //     table.$('tr.selected').removeClass('highlight');
-      //     $(this).addClass('highlight');
-      // }
-  } );
+  // $('#mytable tbody').on( 'click', 'tr', function () {
+  //     console.log($(this));
+  //
+  //     // if ( $(this).hasClass('highlight') ) {
+  //     //     $(this).removeClass('highlight');
+  //     // }
+  //     // else {
+  //     //     table.$('tr.selected').removeClass('highlight');
+  //     //     $(this).addClass('highlight');
+  //     // }
+  // } );
 
 
   $("#about-btn2").click( function(event){
       //You have to get in this code the values you need to work with, for example:
-      var my_json = {start:0,
-      max:-1,
-      search_string:"",}
-
-      make_ajax_query("/ajax_url/", 'POST', my_json, function(response){
-        insertRowToTable('animal_table',response.objects,response.header_list)
+      // var my_json = {start:0,
+      // max:-1,
+      // search_string:"",}
+      queryObjects('Animal', "", 0, -1, function(objects){
+          console.log("got objects: " + objects);
+          insertObjectsToTable('animal_table',objects);
       });
-  });
+
+      // make_ajax_query(make_ajax_path('animal'), 'POST', my_json, function(response){
+      //   insertObjectsToTable('animal_table',response.objects)
+      // });
+    });
 
 
 
   $( "#animal-tags" ).autocomplete({
-    source: test_query,
+    source: animal_query,
     select: function(event, ui){
       console.log("event ", event);
       console.log("ui: ", ui);
@@ -175,18 +194,12 @@ $(document).ready(function() {
       localStorage.setItem("animal-tags-selected-object", JSON.stringify(ui.item.data))
       delete ui.item.data
 
-      console.log(JSON.parse(localStorage.getItem("animal-tags-selected-object")))
-
-
-
-      console.log("added : ", ui.item)
-
     },
   });
 
   $("#add-btn").click( function(event){
       //You have to get in this code the values you need to work with, for example:
-      console.log("Clicked")
+      insertObjectToTable('animal_table',JSON.parse(localStorage.getItem("animal-tags-selected-object")));
   });
 
 });
