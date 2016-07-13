@@ -41,7 +41,6 @@ $.ajaxSetup({
 /*
   table_name should be in format "type_whrite_anything_here"
   i.e animal_table_1, because table_name is used to determine link address
-
   object_list [<object_in_json>, ...]
   header_list [str, ...] in correct order, allways should start with pk!
   insert_top, set True if want to set new items in top of list
@@ -94,6 +93,16 @@ function make_ajax_query(url, type, data, response_func, error_func){
   });
 }
 
+
+function queryObjects(_type, search_string, start, _max, return_func){
+  var payload = {start:start, max:_max, search_string:search_string};
+  make_ajax_query('/ajax_'+_type+'/', 'POST', payload, function(response){
+    //save header_list for further user
+    localStorage.setItem(_type+"-header-list", JSON.stringify(response.header_list));
+    return_func(response.objects)
+  });
+}
+
 function test_query(request, response){
   console.log(request.term);
 
@@ -101,14 +110,23 @@ function test_query(request, response){
   max:-1,
   search_string:request.term,}
 
+  queryObjects('animal',request.term,0,-1, function(objects){
+    console.log('queryObjects returned: ' + objects);
+  });
+
+
+
   make_ajax_query("/ajax_url/", 'POST', my_json, function(response2){
     objects = []
+
+    console.log(response2)
+
     for(var i in response2.objects){
-      console.log("add object")
-      objects.push({"label":response2.objects[i].name, "value":response2.objects[i]})
+      objects.push({"label":response2.objects[i].name, "data":response2.objects[i]})
     }
 
-    console.log("list", objects)
+    //save header_list for further user
+    localStorage.setItem("animal-header-list", JSON.stringify(response2.header_list));
 
     response(objects)
   });
@@ -147,16 +165,21 @@ $(document).ready(function() {
   });
 
 
-  var availableTags = ['a','b','asd','asdf']
+
   $( "#animal-tags" ).autocomplete({
     source: test_query,
     select: function(event, ui){
       console.log("event ", event);
       console.log("ui: ", ui);
 
-      console.log($("#add-btn"))
+      localStorage.setItem("animal-tags-selected-object", JSON.stringify(ui.item.data))
+      delete ui.item.data
 
-      $("#add-btn").value = ui.value
+      console.log(JSON.parse(localStorage.getItem("animal-tags-selected-object")))
+
+
+
+      console.log("added : ", ui.item)
 
     },
   });

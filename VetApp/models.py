@@ -35,6 +35,13 @@ class PostOffice(models.Model):
         return "%s, %i" % (self.name, self.number)
 
 
+def model_to_dict(model):
+    return_dict = {}
+    for key in model.table_header_string_list():
+        return_dict[key] = clean_str(getattr(model, key))
+    return_dict['type'] = model.getText()
+    return return_dict
+
 class Animal(models.Model):
     name = models.CharField(max_length=50)
     official_name = models.CharField(max_length=50, blank=True)
@@ -66,16 +73,6 @@ class Animal(models.Model):
 
     def table_header_string_list(self=None):
         return ['pk', 'name','specie','race','sex','birthday']
-
-    def to_dict(self):
-        return_dict = {}
-        for key in self.table_header_string_list():
-            return_dict[key] = clean_str(getattr(self, key))
-        return return_dict
-        # print("get attr Animal: ", getattr(self, 'name'))
-        # return {'name': self.name, 'specie':clean_str(self.specie),
-        # 'race':clean_str(self.race), 'sex':clean_str(self.sex),
-        # 'birthday':clean_str(self.birthday)}
 
 
 class Operation(models.Model):

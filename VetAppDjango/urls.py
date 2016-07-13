@@ -29,4 +29,5 @@ urlpatterns = [
     url(r'^api/items/', views.items_search, name='search_items'),
     url(r'^api/operations/', views.operations_search, name='search_operations'),
     url(r'ajax_url/$', ajax.ajax_view, name='ajax_view'),
+    url(r'ajax_animal/$', ajax.get_animals, name='ajax_view'),
 ]
