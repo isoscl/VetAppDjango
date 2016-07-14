@@ -43,26 +43,30 @@ function delete_row(e){
 */
 function insertObjectToTable(table_name, object, link){
   var table = document.getElementById(table_name);
-  var row = table.insertRow(-1);
+  if(table){
+    var row = table.insertRow(-1);
 
-  get_header_list(object['type'], function(header_list){
-    console.log("got header_list: " + header_list)
-    //make hidden pk column
-    var cell = row.insertCell(0);
-    cell.innerHTML = object['pk'];
-    cell.style = 'display:none'
-    //make link to object if wanted
-    var i = 1;
-    if(link){ //make
-      row.insertCell(i).innerHTML = '<a target="_blank" href="/'+ table_name.split('_')[0] +'/?id='+object['pk']+'">' + object[header_list[i]] + '</a>'
-      i++;
-    }
-    //insert data to row
-    for(; i < header_list.length; i++){
-      row.insertCell(i).innerHTML = object[header_list[i]]
-    }
-    row.insertCell(i).innerHTML = '<button onclick="$(this).closest(\'tr\').remove()";>X</button>'
-  });
+    get_header_list(object['type'], function(header_list){
+      console.log("got header_list: " + header_list)
+      //make hidden pk column
+      var cell = row.insertCell(0);
+      cell.innerHTML = object['pk'];
+      cell.style = 'display:none'
+      //make link to object if wanted
+      var i = 1;
+      if(link){ //make
+        row.insertCell(i).innerHTML = '<a target="_blank" href="/'+ table_name.split('_')[0] +'/?id='+object['pk']+'">' + object[header_list[i]] + '</a>'
+        i++;
+      }
+      //insert data to row
+      for(; i < header_list.length; i++){
+        row.insertCell(i).innerHTML = object[header_list[i]]
+      }
+      row.insertCell(i).innerHTML = '<button onclick="$(this).closest(\'tr\').remove()";>X</button>'
+    });
+  }else{
+    alert("insertObjectToTable-function can not find table named: "+ table_name);
+  }
 }
 
 
@@ -99,10 +103,10 @@ function make_ajax_path(_type){
 }
 
 function get_header_list(_type, return_func){
-  var header_list = JSON.parse(localStorage.getItem(_type+"-header-list"));
-  console.log("local header list is: " + header_list)
-  if(header_list === null){
-    console.log("no locale found, making query");
+  var header_list = localStorage.getItem( _type+"-header-list");
+
+  if(header_list == "undefined"){
+    console.log("Header was not found at local storage. Making ajax query to fetch it.");
     make_ajax_query(make_ajax_path('header'), 'GET', {type:_type}, function(response2){
       //Store header-list to localdatabase
       console.log("got: "+ response2);
@@ -110,8 +114,8 @@ function get_header_list(_type, return_func){
       return_func(response2.header_list);
     });
   }else{
-    console.log("Found local list");
-    return_func(header_list)
+    console.log("found! header_list: " + JSON.parse(header_list))
+    return_func(JSON.parse(header_list));
   }
 }
 
@@ -154,52 +158,80 @@ function animal_query(request, response){
   object_query(request, response, 'Animal');
 }
 
-$(document).ready(function() {
-  // $('#mytable tbody').on( 'click', 'tr', function () {
-  //     console.log($(this));
-  //
-  //     // if ( $(this).hasClass('highlight') ) {
-  //     //     $(this).removeClass('highlight');
-  //     // }
-  //     // else {
-  //     //     table.$('tr.selected').removeClass('highlight');
-  //     //     $(this).addClass('highlight');
-  //     // }
-  // } );
+function getTableType(table_name){
+  return table_name.split('_')[0];
+}
 
+function get_text_from_html_string(html_string){
+  var parser = new DOMParser();
+  var doc = parser.parseFromString(html_string, "text/xml");
+  return doc.firstChild
+}
+
+
+
+function getTableObjects(table_name, return_func){
+  var table = document.getElementById(table_name);
+  if(table){
+    get_header_list(getTableType(table_name), function(header_list){
+      var objects = [];
+      if(table.rows.length < 2){
+        console.log("no rows to be parsed");
+        return_func(objects);
+      }else if(table.rows[1].cells.length < header_list.length){
+        alert("Can not get objects from " + table_name + ", because it has less"+
+        "rows than it should have. It has: " + table.rows[1].cells.length +
+        ", it should have: " + header_list.length);
+        return_func(objects);
+      }else{
+        console.log("looping")
+        for(var i = 1; i < table.rows.length; i++){
+          var object = {};
+          for(var j = 0; j < header_list.length; j++){
+            object[header_list[j]] = table.rows[i].cells[j].innerHTML;
+          }
+          objects.push(object);
+        }
+        console.log("Objects are: "+ objects);
+        return_func(objects);
+      }
+    });
+  }else{
+    alert("getTableObjects-function did not find table named: " + table_name);
+    return [];
+  }
+}
+
+function create_table_name(_type, name){
+  return _type + "_" + name + "_table";
+}
+
+$(document).ready(function() {
 
   $("#about-btn2").click( function(event){
-      //You have to get in this code the values you need to work with, for example:
-      // var my_json = {start:0,
-      // max:-1,
-      // search_string:"",}
       queryObjects('Animal', "", 0, -1, function(objects){
           console.log("got objects: " + objects);
-          insertObjectsToTable('animal_table',objects);
+          insertObjectsToTable(create_table_name('Animal',""), objects);
       });
-
-      // make_ajax_query(make_ajax_path('animal'), 'POST', my_json, function(response){
-      //   insertObjectsToTable('animal_table',response.objects)
-      // });
     });
 
-
-
-  $( "#animal-tags" ).autocomplete({
+  $( "#animal-search" ).autocomplete({
     source: animal_query,
     select: function(event, ui){
-      console.log("event ", event);
-      console.log("ui: ", ui);
-
-      localStorage.setItem("animal-tags-selected-object", JSON.stringify(ui.item.data))
+      localStorage.setItem("Animal-search-selected-object", JSON.stringify(ui.item.data))
       delete ui.item.data
-
     },
   });
 
   $("#add-btn").click( function(event){
-      //You have to get in this code the values you need to work with, for example:
-      insertObjectToTable('animal_table',JSON.parse(localStorage.getItem("animal-tags-selected-object")));
+      insertObjectToTable(create_table_name('Animal', ''),JSON.parse(localStorage.getItem("Animal-tags-selected-object")));
   });
+
+  $("#get-btn").click( function(event){
+      getTableObjects(create_table_name('Animal', ''), function(objects){
+        alert("Table contains: " + objects);
+      });
+  });
+
 
 });

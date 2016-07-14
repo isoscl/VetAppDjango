@@ -76,16 +76,43 @@ def model_attrs_to_tuple(model):
             args[key.name] = getattr(model,key.name)
     return (args,) #"cast" dict to tuple
 
+def create_table_name(_type, name):
+    return _type + "_" + name + "_table"
 
-def create_table(table_name, header_list):
-    html = '''<table id="{0}" class="table table-striped table-hover table-condensed">
+
+def make_js_query(_type):
+    return '''object_query(request, response, \'{0}\')'''.format(_type)
+
+def create_table(_type, name, header_list):
+    html = '''
+    <div class="ui-widget">
+      <input id="{0}-search"> </input>
+    <button id="{0}-add-btn" value=""> Add </button>
+    </div>
+    <table id="{0}" class="table table-striped table-hover table-condensed">
         <tr>
-            <th style="display:none" width="0%"></th>'''.format(table_name)
+            <th style="display:none" width="0%"></th>'''.format(create_table_name(_type,name));
 
     for i in range(1, len(header_list)):
         html += '<th >%s</th>' % g_form_labels[header_list[i]]
 
-    return html + '''<th ></th></tr> </table>'''
+    html += '''<th ></th></tr> </table>'''
+
+    html +='''$(document).ready(function() {
+      $( "#{0}" ).autocomplete({
+        source: {1},
+        select: function(event, ui){
+          localStorage.setItem("{0}-search-selected-object", JSON.stringify(ui.item.data))
+          delete ui.item.data
+        },
+      });
+
+      $("#add-btn").click( function(event){
+          insertObjectToTable({0},JSON.parse(localStorage.getItem("{0}-search-selected-objec")));
+      });
+    }'''.format(create_table_name(_type, ''), make_js_query(_type),_type)
+
+    return html
 
 class SpecieDescriptionForm(forms.ModelForm):
     class Meta:

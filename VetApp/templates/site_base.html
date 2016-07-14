@@ -46,12 +46,14 @@
             {% block maincontent %}
             {% endblock %}
 
-            <div class="ui-widget">
-              <label for="animal-tags">Tags: </label>
+            <!-- <div class="ui-widget">
+              <label>Etsi</label>
               <input id="animal-tags"> </input>
             <button id="add-btn" value=""> Add </button>
-            <button id="about-btn2"> Make query!</button>
-            </div>
+            </div> -->
+
+            <!-- <button id="get-btn" value=""> GET </button>
+            <button id="about-btn2"> Make query!</button> -->
 
             {{ animal_table | safe }} <!-- add safe tag to allow raw html -->
 

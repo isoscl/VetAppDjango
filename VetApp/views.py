@@ -71,7 +71,7 @@ class BaseView(View):
         else:
             self.context = {'auth_form':''}
 
-        self.context['animal_table'] = create_table('animal_table',models.Animal.table_header_string_list())
+        self.context['animal_table'] = create_table('Animal', "",models.Animal.table_header_string_list())
 
 
         if self.request.session.__contains__('init'):
