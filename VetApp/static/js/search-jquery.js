@@ -51,7 +51,8 @@ function insertObjectToTable(table_name, object, link){
       //make hidden pk column
       var cell = row.insertCell(0);
       cell.innerHTML = object['pk'];
-      cell.style = 'display:none'
+      cell.style.display = 'none';
+
       //make link to object if wanted
       var i = 1;
       if(link){ //make
@@ -60,7 +61,7 @@ function insertObjectToTable(table_name, object, link){
       }
       //insert data to row
       for(; i < header_list.length; i++){
-        row.insertCell(i).innerHTML = object[header_list[i]]
+        row.insertCell(i).innerHTML = object[header_list[i]];
       }
       row.insertCell(i).innerHTML = '<button onclick="$(this).closest(\'tr\').remove()";>X</button>'
     });
@@ -206,32 +207,68 @@ function create_table_name(_type, name){
   return _type + "_" + name + "_table";
 }
 
+
+
+function get_search_json(_type, table_name){
+  function get_json(table_name, query){
+    return {
+      source: query,
+      select: function(event, ui){
+        localStorage.setItem(table_name+"-search-selected-object", JSON.stringify(ui.item.data))
+        delete ui.item.data
+      },
+    }
+  }
+
+  if(_type === 'Animal'){
+    return get_json(table_name, animal_query);
+  }else{
+    console.error("get_search_json, got un defined type: " + _type);
+    return {};
+  }
+}
+
+function initAutocomplete(_type, _name){
+  var item = $( "#"+ name +"-search" );
+  if(item){
+    var name = create_table_name(_type, _name);
+    item.autocomplete(get_search_json(_type, name));
+  }
+}
+
+function initAddButton(_type, _name){
+  var item = $("#" + name + "-add-btn");
+  if(item){
+    var name = create_table_name(_type, _name);
+    localStorage.setItem(name+"-search-selected-object",undefined)
+    item.click( function(event){
+        json_string = localStorage.getItem(name+"-search-selected-object" );
+        if(json_string !== 'undefined'){
+          insertObjectToTable(name, JSON.parse(json_string));
+        }else{
+          console.log("No object to be added")
+        }
+    });
+  }
+}
+
+
 $(document).ready(function() {
 
-  $("#about-btn2").click( function(event){
-      queryObjects('Animal', "", 0, -1, function(objects){
-          console.log("got objects: " + objects);
-          insertObjectsToTable(create_table_name('Animal',""), objects);
-      });
-    });
+  initAutocomplete('Animal','');
+  initAddButton('Animal','');
 
-  $( "#animal-search" ).autocomplete({
-    source: animal_query,
-    select: function(event, ui){
-      localStorage.setItem("Animal-search-selected-object", JSON.stringify(ui.item.data))
-      delete ui.item.data
-    },
-  });
+  // $("#about-btn2").click( function(event){
+  //     queryObjects('Animal', "", 0, -1, function(objects){
+  //         console.log("got objects: " + objects);
+  //         insertObjectsToTable(create_table_name('Animal',""), objects);
+  //     });
+  //   });
 
-  $("#add-btn").click( function(event){
-      insertObjectToTable(create_table_name('Animal', ''),JSON.parse(localStorage.getItem("Animal-tags-selected-object")));
-  });
-
-  $("#get-btn").click( function(event){
-      getTableObjects(create_table_name('Animal', ''), function(objects){
-        alert("Table contains: " + objects);
-      });
-  });
-
+  // $("#get-btn").click( function(event){
+  //     getTableObjects(create_table_name('Animal', ''), function(objects){
+  //       alert("Table contains: " + objects);
+  //     });
+  // });
 
 });

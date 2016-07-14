@@ -87,6 +87,8 @@ class BaseView(View):
             self.context[form_name] = form(self.request.GET)
         else:
             self.context[form_name] = form()
+
+        print("self.context[form_name] == " + str(self.context[form_name]))
         #print(self.context[form_name])
 
         # print("FORM is: ", self.context[form_name])

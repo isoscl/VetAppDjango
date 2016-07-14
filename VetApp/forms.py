@@ -96,23 +96,7 @@ def create_table(_type, name, header_list):
     for i in range(1, len(header_list)):
         html += '<th >%s</th>' % g_form_labels[header_list[i]]
 
-    html += '''<th ></th></tr> </table>'''
-
-    html +='''$(document).ready(function() {
-      $( "#{0}" ).autocomplete({
-        source: {1},
-        select: function(event, ui){
-          localStorage.setItem("{0}-search-selected-object", JSON.stringify(ui.item.data))
-          delete ui.item.data
-        },
-      });
-
-      $("#add-btn").click( function(event){
-          insertObjectToTable({0},JSON.parse(localStorage.getItem("{0}-search-selected-objec")));
-      });
-    }'''.format(create_table_name(_type, ''), make_js_query(_type),_type)
-
-    return html
+    return html + '''<th ></th></tr> </table>'''
 
 class SpecieDescriptionForm(forms.ModelForm):
     class Meta:
@@ -314,13 +298,45 @@ class VisitForm(forms.ModelForm):
         return False
 
 
+
+
+class OwnerForm2():
+    def __init__(self, *args, **kwargs):
+        pass
+
+    name = forms.CharField(label=g_form_labels['name'], max_length=100)
+    address = forms.CharField(label=g_form_labels['address'], max_length=100, required=False)
+
+    #  = models.ForeignKey('PostOffice',  on_delete=models.CASCADE, blank=True, null=True)
+    #post_office = forms.ModelChoiceField(queryset=PostOffice.objects.all())
+    #animals = forms.ModelMultipleChoiceField(queryset=Animal.objects,required = False)
+
+    phonenumber = forms.CharField(label=g_form_labels['phonenumber'], max_length=100, required=False)
+    email = forms.CharField(label=g_form_labels['address'], max_length=100, required=False, widget=forms.EmailInput())
+    other_info = forms.CharField(label=g_form_labels['other_info'], max_length=500, required=False)
+
+    archive = forms.BooleanField(initial=False, required = False) #if reguired will say it is required
+    id = forms.CharField(widget = forms.HiddenInput(), required = False)
+
+
+class CharField():
+    def __init__(self, name, label='True', max_length=255,required=False):
+        self.html = '<tr>'
+        if(label):
+            self.html += '''<th><label for="id_{0}}">Nimi:</label></th>'''.format(name, g_form_labels[name])
+        self.html += '''<td><input class="form-control" id="id_{0}" maxlength="{1}"
+        name="{0}" placeholder="{2}" type="text" /></td>'''.format(name, max_length, g_form_placeholders[name])
+
+    def __str__(self):
+        return self.html
+
 class OwnerForm(forms.Form):
     name = forms.CharField(label=g_form_labels['name'], max_length=100)
     address = forms.CharField(label=g_form_labels['address'], max_length=100, required=False)
 
     #  = models.ForeignKey('PostOffice',  on_delete=models.CASCADE, blank=True, null=True)
     #post_office = forms.ModelChoiceField(queryset=PostOffice.objects.all())
-    animals = forms.ModelMultipleChoiceField(queryset=Animal.objects,required = False)
+    #animals = forms.ModelMultipleChoiceField(queryset=Animal.objects,required = False)
 
     phonenumber = forms.CharField(label=g_form_labels['phonenumber'], max_length=100, required=False)
     email = forms.CharField(label=g_form_labels['address'], max_length=100, required=False, widget=forms.EmailInput())
@@ -336,7 +352,11 @@ class OwnerForm(forms.Form):
         print("args: ", args)
         print("kwargs: ", kwargs)
 
-        animal_query = Animal.objects
+        class only_all():
+            def all():
+                return []
+
+        animal_query = []
         if len(args) == 1:
             owner = get_object(args[0].get('id', None),Owner)
 
@@ -358,7 +378,7 @@ class OwnerForm(forms.Form):
 
         #self.fields['animals'] = args[0]['animals']
         print("animal query: ", animal_query)
-        self.fields['animals'].queryset = animal_query
+        #self.fields['animals'] = animal_query
 
         format_widgets(self)
         print(self.fields)

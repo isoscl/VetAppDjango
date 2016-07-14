@@ -24,6 +24,9 @@
         {% csrf_token %}
         <div class="form_group">
         {{owner_form}}
+
+        {{ animal_table | safe }}
+
         </div>
         <button class="btn btn-lg btn-primary " type="submit">Tallenna</button>
         </form>
