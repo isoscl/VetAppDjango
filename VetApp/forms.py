@@ -5,6 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm
 
 from VetApp.translate import g_login_text, g_form_labels, g_form_placeholders,g_count_type_list
 
+from VetApp import models
 from VetApp.models import *
 from VetApp.items import *
 
@@ -83,7 +84,7 @@ def create_table_name(_type, name):
 def make_js_query(_type):
     return '''object_query(request, response, \'{0}\')'''.format(_type)
 
-def create_table(_type, name, header_list):
+def create_table(_type, name):
     html = '''
     <div class="ui-widget">
       <input id="{0}-search"> </input>
@@ -93,8 +94,13 @@ def create_table(_type, name, header_list):
         <tr>
             <th style="display:none" width="0%"></th>'''.format(create_table_name(_type,name));
 
-    for i in range(1, len(header_list)):
-        html += '<th >%s</th>' % g_form_labels[header_list[i]]
+    if _type in models.__all__:
+        header_list = eval('models.'+_type).table_header_string_list()
+
+        for i in range(1, len(header_list)):
+            html += '<th >%s</th>' % g_form_labels[header_list[i]]
+    else:
+        print("ERROR: forms.py create_table() can not find object named: " + _type)
 
     return html + '''<th ></th></tr> </table>'''
 
@@ -323,14 +329,83 @@ class CharField():
     def __init__(self, name, label='True', max_length=255,required=False):
         self.html = '<tr>'
         if(label):
-            self.html += '''<th><label for="id_{0}}">Nimi:</label></th>'''.format(name, g_form_labels[name])
+            self.html += '''<th><label for="id_{0}">Nimi:</label></th>'''.format(name, g_form_labels[name])
         self.html += '''<td><input class="form-control" id="id_{0}" maxlength="{1}"
         name="{0}" placeholder="{2}" type="text" /></td>'''.format(name, max_length, g_form_placeholders[name])
 
     def __str__(self):
         return self.html
 
-class OwnerForm(forms.Form):
+#<textarea class="form-control" cols="40" id="id_insurance" maxlength="255" name="insurance" placeholder="Vakuutus" rows="5"></textarea>
+
+def model_field_to_form_field(field, _type):
+    if(_type == 'CharField'):
+        pass
+    elif(_type == 'AutoField'):
+        pass
+    elif(_type == 'TextField'):
+        pass
+    elif(_type == 'EmailField'):
+        pass
+    elif(_type == 'BooleanField'):
+        pass
+    elif(_type == 'DateTimeField'):
+        pass
+    # elif(_type == ''):
+        # pass
+    else:
+        pass
+
+    print(field.related_model.objects.all())
+
+def genereate_fields(form_self, ):
+    if( form_self and form_self.__class__ and form_self.__class__.__name__ and
+        (self.__class__.__name__[:-4] in models.__all__ )):
+        model = eval(self.__class__.__name__[:-4])
+
+        for i in range(0,len(Owner._meta.fields)):
+            field = Owner._meta.fields[i]
+            _type = str(type(field)).split('.')[-1][:-2]
+
+        for i in range(0,len(Owner._meta.many_to_many)):
+            pass
+    pass
+
+class OwnerForm(object):
+    def __init__(self, *args, **kwargs):
+        self.name = CharField('name',max_length=100, required=True)
+        self.animal_table = create_table('Animal','owned')
+
+        #print(self.__class__.__name__[:-4])
+
+        # print(type(Owner._meta.fields[0]))
+        # print(Owner._meta.many_to_many[0])
+        # print()
+
+        #Owner._meta.related_objects has linked fields like Visits
+
+        for i in range(0,len(Owner._meta.fields)):
+            field = Owner._meta.fields[i]
+            #if(str(type(field)).split('.')[-1][:-2] == 'ForeignKey'):
+                #print(field.related_model.objects.all())
+            print(str(type(field)).split('.')[-1][:-2], field.name, field.blank, field.max_length, field.help_text)
+
+            # if ('django.db.models.field' in str(type(Owner.__dict__[key])) ):
+            #     print(str(type(Owner.__dict__[key])))
+
+
+    # def __repr__(self):
+    #     return '<%(cls)s bound=%(bound)s, valid=%(valid)s, fields=(%(fields)s)>' % {
+    #         'cls': self.__class__.__name__,
+    #         'bound': True,#self.is_bound,
+    #         'valid': True, #is_valid,
+    #         'fields': ';'.join([self.name, self.animal])#self.fields),
+    #     }
+        #return '<a> HEI </a>'
+
+
+
+class OwnerForm2(forms.Form):
     name = forms.CharField(label=g_form_labels['name'], max_length=100)
     address = forms.CharField(label=g_form_labels['address'], max_length=100, required=False)
 

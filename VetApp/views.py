@@ -71,7 +71,7 @@ class BaseView(View):
         else:
             self.context = {'auth_form':''}
 
-        self.context['animal_table'] = create_table('Animal', "",models.Animal.table_header_string_list())
+        #self.context['animal_table'] = create_table('Animal', "")
 
 
         if self.request.session.__contains__('init'):
@@ -88,7 +88,6 @@ class BaseView(View):
         else:
             self.context[form_name] = form()
 
-        print("self.context[form_name] == " + str(self.context[form_name]))
         #print(self.context[form_name])
 
         # print("FORM is: ", self.context[form_name])
