@@ -325,56 +325,193 @@ class OwnerForm2():
     id = forms.CharField(widget = forms.HiddenInput(), required = False)
 
 
-class CharField():
-    def __init__(self, name, label='True', max_length=255,required=False):
-        self.html = '<tr>'
-        if(label):
-            self.html += '''<th><label for="id_{0}">Nimi:</label></th>'''.format(name, g_form_labels[name])
-        self.html += '''<td><input class="form-control" id="id_{0}" maxlength="{1}"
-        name="{0}" placeholder="{2}" type="text" /></td>'''.format(name, max_length, g_form_placeholders[name])
+def generate_html_input_field(_class,name, placeholder, html_type, value="",
+    input_type='text',maxlength=None, label=True, required=False, other_tags=""):
+    html = '<tr>'
+    if(label):
+        html += '''<th><label for="id_{0}">{1}:</label></th>'''.format(name,
+        g_form_labels[name])
+    html += '''<td><{0} class="{3}" id="id_{1}" name="{1}" placeholder="{2}"
+    type={4} {5} {6} {8}>{7}</{0}></td>'''.format(html_type, name, placeholder, _class,
+    input_type, ('' if not maxlength else 'maxlength="{}"'.format(maxlength)),
+    ('' if not required else 'required'), value, other_tags)
+
+    return html
+
+class CharField(object):
+    def __init__(self, name, value="", max_length=255, required=False, label='True'):
+        self.name = name
+        self.value = value
+        self.max_length = max_length
+        self.label = label
+        self.required = required
 
     def __str__(self):
-        return self.html
+        return generate_html_input_field("form-control",self.name,
+        g_form_placeholders[self.name], 'input',self.value,
+        input_type='text', maxlength=self.max_length,label=self.label,
+        required=self.required)
 
-#<textarea class="form-control" cols="40" id="id_insurance" maxlength="255" name="insurance" placeholder="Vakuutus" rows="5"></textarea>
+class HiddenField(object):
+    def __init__(self, name, value=''):
+        self.name = name
+        self.value = value
 
-def model_field_to_form_field(field, _type):
+    def __str__(self):
+        return generate_html_input_field("form-control",self.name,
+        g_form_placeholders[self.name], html_type='input', value=self.value,
+        input_type='hidden', maxlength='', label=False)
+
+
+
+class TextField(object):
+    def __init__(self, name, value="", max_length=500, required=False,
+    label='True', cols=40, rows=5):
+        self.name = name
+        self.value = value
+        self.max_length = max_length
+        self.label = label
+        self.required = required
+        self.cols=cols
+        self.rows=rows
+
+    def __str__(self):
+        return generate_html_input_field("form-control",self.name,
+        g_form_placeholders[self.name], 'textarea',self.value,
+        input_type='text', maxlength=self.max_length, label=self.label,
+        required=self.required, other_tags='cols="{0}" rows="{1}"'.format(
+        self.cols, self.rows))
+
+class EmailField(object):
+    def __init__(self, name, value="", max_length=50, required=False, label='True'):
+        self.name = name
+        self.value = value
+        self.label = label
+        self.max_length = max_length
+        self.required = required
+
+    def __str__(self):
+        return generate_html_input_field("form-control",self.name,
+        g_form_placeholders[self.name], 'input',self.value,
+        input_type='email', maxlength=self.max_length,label=self.label,
+        required=self.required)
+
+class DateTimeField(object):
+    def __init__(self, name, value="", required=False, label='True'):
+        self.name = name
+        self.value = value
+        self.label = label
+        self.required = required
+
+    def __str__(self):
+        return generate_html_input_field("form-control",self.name,
+        g_form_placeholders[self.name], 'input',self.value,
+        input_type='datetime-local', maxlength='',label=self.label,
+        required=self.required)
+
+class BooleanField(object):
+    def __init__(self, name, label='True'):
+        self.name = name
+        self.label = label
+
+    def __str__(self):
+        return generate_html_input_field("form-control",self.name,
+        g_form_placeholders[self.name], 'input','',
+        input_type='checkbox', maxlength='',label=self.label,
+        required=False)
+
+class ForeignKeyField(object):
+    def __init__(self, name, selected_id=None, required=False, label=True,options=[]):
+        self.name = name
+        self.selected_id = selected_id
+        self.required = required
+        self.label = label
+        self.options = options
+
+    def __str__(self):
+        html = '<tr>'
+        if self.label:
+            html += '<th><label for="id_{0}">{1}:</label></th>'.format(self.name,
+            g_form_labels[self.name])
+        html += '''<td><select class="form-control" id="id_{0}"
+        name="{0}" placeholder="{1}">'''.format(self.name,g_form_placeholders[self.name])
+
+        html += '''<option value="" {0}>---------</option>'''.format(
+        'selected="selected"' if not self.selected_id else '')
+        for model in self.options:
+            html += '''<option value="{0}" {2}>{1}</option>'''.format(model.pk, str(model),
+            'selected="selected"' if self.selected_id == model.pk else '')
+
+        return html + '</select></td></tr>'
+
+def model_field_to_form_field(field):
+    #get type from field type string
+    _type = _type = str(type(field)).split('.')[-1][:-2]
+    print("Field type is: ", _type)
     if(_type == 'CharField'):
-        pass
+        return CharField(name=field.name, max_length=field.max_length,
+         required = not field.blank)# field.help_text)
     elif(_type == 'AutoField'):
-        pass
+        return HiddenField(name=field.name)
     elif(_type == 'TextField'):
-        pass
+        return TextField(name=field.name, max_length=field.max_length,
+         required = not field.blank)
     elif(_type == 'EmailField'):
-        pass
+        return EmailField(name=field.name, max_length=field.max_length,
+        required = not field.blank)
     elif(_type == 'BooleanField'):
-        pass
+        return BooleanField(name=field.name)
     elif(_type == 'DateTimeField'):
+        return DateTimeField(name=field.name, max_length=field.max_length,
+         required = not field.blank)
+    elif(_type == 'ForeignKey'):
+        return ForeignKeyField(name=field.name, required = not field.blank,
+        options=field.related_model.objects.all())
+    elif(_type == 'DecimalField'):
+        #<input class="form-control" id="id_price" max="99999" min="0"
+        #name="price" placeholder="Hinta" step="0.05" type="number" />
         pass
     # elif(_type == ''):
-        # pass
+    #     pass
     else:
-        pass
+        return None
 
-    print(field.related_model.objects.all())
-
-def genereate_fields(form_self, ):
+def genereate_fields(form_self):
+    #find responding model
     if( form_self and form_self.__class__ and form_self.__class__.__name__ and
-        (self.__class__.__name__[:-4] in models.__all__ )):
-        model = eval(self.__class__.__name__[:-4])
+        (form_self.__class__.__name__[:-4] in models.__all__ )):
+        #eval model
+        model = eval(form_self.__class__.__name__[:-4])
 
-        for i in range(0,len(Owner._meta.fields)):
-            field = Owner._meta.fields[i]
-            _type = str(type(field)).split('.')[-1][:-2]
 
-        for i in range(0,len(Owner._meta.many_to_many)):
+        #generate basic fields
+        for i in range(0,len(model._meta.fields)):
+            print("Making field: ", model._meta.fields[i])
+            field = model_field_to_form_field(model._meta.fields[i])
+            if(field):
+                setattr(form_self, field.name, field)
+            else:
+                print("model_field_to_form_field could not make field for", model._meta.fields[i])
+
+        #generate many_to_many tables
+        for i in range(0,len(model._meta.many_to_many)):
             pass
-    pass
+
+        return True
+    return False
 
 class OwnerForm(object):
     def __init__(self, *args, **kwargs):
-        self.name = CharField('name',max_length=100, required=True)
-        self.animal_table = create_table('Animal','owned')
+        print("OwnerForm: args: ", args, ' kwargs: ', kwargs)
+
+        if(genereate_fields(self)):
+            print("Initialization ok")
+        else:
+            print("Error at Initialization")
+
+    def __str__(self):
+        return '<b>test</b>'
+        # print(generate_html_input_field("form-control",'name', 'placeholder', 'input', 'text', label=True))
 
         #print(self.__class__.__name__[:-4])
 
@@ -384,11 +521,11 @@ class OwnerForm(object):
 
         #Owner._meta.related_objects has linked fields like Visits
 
-        for i in range(0,len(Owner._meta.fields)):
-            field = Owner._meta.fields[i]
-            #if(str(type(field)).split('.')[-1][:-2] == 'ForeignKey'):
-                #print(field.related_model.objects.all())
-            print(str(type(field)).split('.')[-1][:-2], field.name, field.blank, field.max_length, field.help_text)
+        # for i in range(0,len(Owner._meta.fields)):
+        #     field = Owner._meta.fields[i]
+        #     #if(str(type(field)).split('.')[-1][:-2] == 'ForeignKey'):
+        #         #print(field.related_model.objects.all())
+        #     print(str(type(field)).split('.')[-1][:-2], field.name, field.blank, field.max_length, field.help_text)
 
             # if ('django.db.models.field' in str(type(Owner.__dict__[key])) ):
             #     print(str(type(Owner.__dict__[key])))

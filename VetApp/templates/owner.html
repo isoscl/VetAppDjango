@@ -23,7 +23,12 @@
         <form method="POST" id="userform" form class="niceform">
         {% csrf_token %}
         <div class="form_group">
-        {{owner_form}}
+        {{owner_form.name | safe}}
+        {{owner_form.address | safe}}
+        {{owner_form.phonenumber | safe}}
+        {{owner_form.email | safe}}
+        {{owner_form.other_info | safe}}
+        {{owner_form.post_office | safe}}
 
         {{ animal_table | safe }}
 
