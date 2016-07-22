@@ -531,6 +531,11 @@ def genereate_fields(form_self, many_to_many_options={}):
         model = None
         if hasattr(form_self, 'model'):
             model = form_self.model
+        #     setattr(form_self, 'pk', CharField(name='pk', max_length=128,
+        #      required = True, value=model.pk) )
+        # else:
+        #     setattr(form_self, 'pk', CharField(name='pk', max_length=0,
+        #      required = False, value=''))
 
 
         #generate basic fields
@@ -546,7 +551,7 @@ def genereate_fields(form_self, many_to_many_options={}):
         #generate many_to_many tables
         for i in range(0,len(model_class._meta.many_to_many)):
             field = TableField(_type=model_class._meta.many_to_many[i].related_model.__name__,
-                name='', objects=getattr(model, model_class._meta.many_to_many[i].name).all(),
+                name='', objects=Animal.objects.all(),#getattr(model, model_class._meta.many_to_many[i].name).all() if model else [],
                 link=True, delete=True, add=True)
             setattr(form_self, model_class._meta.many_to_many[i].name, field)
 
@@ -558,10 +563,8 @@ class OwnerForm(object):
         print("OwnerForm: args: ", args, ' kwargs: ', kwargs)
 
         #get wanted model
-        if len(args) > 0 and ('id' in args[0]):
-            print("searching model with id: ", args[0]['id'])
+        if len(args) > 0 and ('id' in args[0]) and args[0]['id'] != '':
             self.model = get_model_class_from_form(self).objects.get(pk=args[0]['id'])
-            print('model is', self.model)
 
         if(genereate_fields(self)):
             print("Initialization ok")

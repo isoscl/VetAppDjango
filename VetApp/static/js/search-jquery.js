@@ -254,12 +254,27 @@ function initAddButton(_type, _name){
   }
 }
 
+function submitForm(_class){
+  if(_class == 'owner'){
+    getTableObjects(create_table_name('Animal',''), function(objects){
+      var form = $('#ownerform');
+      form.append($('<input>', {
+              type: 'hidden',
+              name: "animals",
+              value: objects,
+          }));
+      form.submit();
+    });
+  }
+}
 
 $(document).ready(function() {
 
   initAutocomplete('Animal','');
   initAddButton('Animal','');
   console.log("inited");
+
+
   // $("#about-btn2").click( function(event){
   //     queryObjects('Animal', "", 0, -1, function(objects){
   //         console.log("got objects: " + objects);
