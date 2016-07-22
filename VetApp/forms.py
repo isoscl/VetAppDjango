@@ -110,7 +110,7 @@ def create_table(_type, name, objects=[], link=True, delete=True, add=True):
     if add:
         html += '''<div class="ui-widget">
           <input id="{0}-search"> </input>
-        <button id="{0}-add-btn" class="btn btn-primary"> Add </button>
+        <button type="button" id="{0}-add-btn" class="btn btn-primary"> Add </button>
         </div>'''.format(table_name)
     html += '''<table id="{0}" class="table table-striped table-hover table-condensed">
             <tr>
@@ -142,7 +142,7 @@ def create_table(_type, name, objects=[], link=True, delete=True, add=True):
                 table_row += create_html_table_cell(model_dict[key])
 
         if delete:
-            table_row += create_html_table_cell('''<button class="btn btn-danger"
+            table_row += create_html_table_cell('''<button type="button" class="btn btn-danger"
             onclick="$(this).closest(\'tr\').remove()";>X</button>''')
 
         html += (table_row + '</tr>')
@@ -374,7 +374,7 @@ def generate_html_input_field(_class,name, placeholder, html_type, value="",
         html += '''<th><label for="id_{0}">{1}:</label></th>'''.format(name,
         g_form_labels[name])
     html += '''<td><{0} class="{3}" id="id_{1}" name="{1}" placeholder="{2}"
-    type={4} {5} {6} {8}>{7}</{0}></td>'''.format(html_type, name, placeholder, _class,
+    type={4} {5} {6} {8} value={7}></{0}></td>'''.format(html_type, name, placeholder, _class,
     input_type, ('' if not maxlength else 'maxlength="{}"'.format(maxlength)),
     ('' if not required else 'required'), value, other_tags)
 
@@ -450,9 +450,12 @@ class DateTimeField(object):
         required=self.required)
 
 class BooleanField(object):
-    def __init__(self, name, label='True'):
+    def __init__(self, name, label='True', value=''):
         self.name = name
         self.label = label
+        self.value = value
+
+        #TODO: set value when it is given
 
     def __str__(self):
         return generate_html_input_field("form-control",self.name,
@@ -484,29 +487,29 @@ class ForeignKeyField(object):
 
         return html + '</select></td></tr>'
 
-def model_field_to_form_field(field):
+def model_field_to_form_field(field, value=''):
     #get type from field type string
-    _type = _type = str(type(field)).split('.')[-1][:-2]
-    print("Field type is: ", _type)
+    _type = str(type(field)).split('.')[-1][:-2]
+    print("Field type is: ", _type, 'value: ', value)
     if(_type == 'CharField'):
         return CharField(name=field.name, max_length=field.max_length,
-         required = not field.blank)# field.help_text)
+         required = not field.blank, value=value)# field.help_text)
     elif(_type == 'AutoField'):
-        return HiddenField(name=field.name)
+        return HiddenField(name=field.name, value=value)
     elif(_type == 'TextField'):
         return TextField(name=field.name, max_length=field.max_length,
-         required = not field.blank)
+         required = not field.blank, value=value)
     elif(_type == 'EmailField'):
         return EmailField(name=field.name, max_length=field.max_length,
-        required = not field.blank)
+        required = not field.blank, value=value)
     elif(_type == 'BooleanField'):
-        return BooleanField(name=field.name)
+        return BooleanField(name=field.name, value=value)
     elif(_type == 'DateTimeField'):
         return DateTimeField(name=field.name, max_length=field.max_length,
-         required = not field.blank)
+         required = not field.blank, value=value)
     elif(_type == 'ForeignKey'):
         return ForeignKeyField(name=field.name, required = not field.blank,
-        options=field.related_model.objects.all())
+        options=field.related_model.objects.all(), selected_id=(value.pk if hasattr(value, 'pk') else None))
     elif(_type == 'DecimalField'):
         #<input class="form-control" id="id_price" max="99999" min="0"
         #name="price" placeholder="Hinta" step="0.05" type="number" />
@@ -516,28 +519,36 @@ def model_field_to_form_field(field):
     else:
         return None
 
+def get_model_class_from_form(form_self):
+    return eval(form_self.__class__.__name__[:-4])
+
 def genereate_fields(form_self, many_to_many_options={}):
     #find responding model
     if( form_self and form_self.__class__ and form_self.__class__.__name__ and
         (form_self.__class__.__name__[:-4] in models.__all__ )):
         #eval model
-        model = eval(form_self.__class__.__name__[:-4])
+        model_class = get_model_class_from_form(form_self)
+        model = None
+        if hasattr(form_self, 'model'):
+            model = form_self.model
 
 
         #generate basic fields
-        for i in range(0,len(model._meta.fields)):
-            print("Making field: ", model._meta.fields[i])
-            field = model_field_to_form_field(model._meta.fields[i])
+        for i in range(0,len(model_class._meta.fields)):
+            print("Making field: ", model_class._meta.fields[i])
+            field = model_field_to_form_field(model_class._meta.fields[i],
+                value=(getattr(model, str(model_class._meta.fields[i]).split('.')[-1] ) if model else ''))
             if(field):
                 setattr(form_self, field.name, field)
             else:
-                print("model_field_to_form_field could not make field for", model._meta.fields[i])
+                print("model_field_to_form_field could not make field for", model_class._meta.fields[i])
 
         #generate many_to_many tables
-        for i in range(0,len(model._meta.many_to_many)):
-            field = TableField(_type=model._meta.many_to_many[i].related_model.__name__,
-                            name='', objects=[], link=True, delete=True, add=True)
-            setattr(form_self, model._meta.many_to_many[i].name, field)
+        for i in range(0,len(model_class._meta.many_to_many)):
+            field = TableField(_type=model_class._meta.many_to_many[i].related_model.__name__,
+                name='', objects=getattr(model, model_class._meta.many_to_many[i].name).all(),
+                link=True, delete=True, add=True)
+            setattr(form_self, model_class._meta.many_to_many[i].name, field)
 
         return True
     return False
@@ -545,6 +556,12 @@ def genereate_fields(form_self, many_to_many_options={}):
 class OwnerForm(object):
     def __init__(self, *args, **kwargs):
         print("OwnerForm: args: ", args, ' kwargs: ', kwargs)
+
+        #get wanted model
+        if len(args) > 0 and ('id' in args[0]):
+            print("searching model with id: ", args[0]['id'])
+            self.model = get_model_class_from_form(self).objects.get(pk=args[0]['id'])
+            print('model is', self.model)
 
         if(genereate_fields(self)):
             print("Initialization ok")
