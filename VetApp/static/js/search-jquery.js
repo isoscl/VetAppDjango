@@ -169,8 +169,6 @@ function get_text_from_html_string(html_string){
   return doc.firstChild
 }
 
-
-
 function getTableObjects(table_name, return_func){
   var table = document.getElementById(table_name);
   if(table){
@@ -208,7 +206,6 @@ function create_table_name(_type, name){
 }
 
 
-
 function get_search_json(_type, table_name){
   function get_json(table_name, query){
     return {
@@ -240,15 +237,20 @@ function initAddButton(_type, _name){
   var item = $("#" + name + "-add-btn");
   if(item){
     var name = create_table_name(_type, _name);
-    localStorage.setItem(name+"-search-selected-object",undefined)
+    localStorage.setItem(name+"-search-selected-object",undefined);
     item.click( function(event){
+        console.log("cliked button");
         json_string = localStorage.getItem(name+"-search-selected-object" );
         if(json_string !== 'undefined'){
+          console.log("add object to list");
           insertObjectToTable(name, JSON.parse(json_string));
         }else{
-          console.log("No object to be added")
+          console.log("No object to be added");
         }
     });
+    console.log("inited button: " + "#" + name + "-add-btn")
+  }else{
+    console.log("could not found add button named: "+ "#" + name + "-add-btn")
   }
 }
 
@@ -257,7 +259,7 @@ $(document).ready(function() {
 
   initAutocomplete('Animal','');
   initAddButton('Animal','');
-
+  console.log("inited");
   // $("#about-btn2").click( function(event){
   //     queryObjects('Animal', "", 0, -1, function(objects){
   //         console.log("got objects: " + objects);

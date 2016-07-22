@@ -84,15 +84,37 @@ def create_table_name(_type, name):
 def make_js_query(_type):
     return '''object_query(request, response, \'{0}\')'''.format(_type)
 
-def create_table(_type, name):
-    html = '''
-    <div class="ui-widget">
-      <input id="{0}-search"> </input>
-    <button id="{0}-add-btn" value=""> Add </button>
-    </div>
-    <table id="{0}" class="table table-striped table-hover table-condensed">
-        <tr>
-            <th style="display:none" width="0%"></th>'''.format(create_table_name(_type,name));
+class TableField(object):
+    def __init__(self,_type,name, objects=[], link=True, delete=True, add=True):
+        self._type=_type
+        self.name = name
+        self.objects = objects
+        self.link = link
+        self.delete = delete
+        self.add = add
+
+    def __str__(self):
+        return create_table(_type = self._type, name = self.name,
+                            objects=self.objects, link=self.link,
+                            delete=self.delete, add=self.add)
+
+def create_html_table_cell(string, hidden=False):
+    if(hidden):
+        return '<td style="display:none" width="0%"">' + string + '</td>'
+    else:
+        return '<td>' + string + '</td>'
+
+def create_table(_type, name, objects=[], link=True, delete=True, add=True):
+    table_name = create_table_name(_type,name)
+    html = ''
+    if add:
+        html += '''<div class="ui-widget">
+          <input id="{0}-search"> </input>
+        <button id="{0}-add-btn" class="btn btn-primary"> Add </button>
+        </div>'''.format(table_name)
+    html += '''<table id="{0}" class="table table-striped table-hover table-condensed">
+            <tr>
+                <th style="display:none" width="0%"></th>'''.format(table_name)
 
     if _type in models.__all__:
         header_list = eval('models.'+_type).table_header_string_list()
@@ -102,7 +124,30 @@ def create_table(_type, name):
     else:
         print("ERROR: forms.py create_table() can not find object named: " + _type)
 
-    return html + '''<th ></th></tr> </table>'''
+    if delete:
+        html += '<th></th>'
+
+    html += '</tr>' # last cell for button
+
+    for obj in objects:
+        model_dict = models.model_to_dict(obj)
+
+        table_row = "<tr>"
+        for key in obj.table_header_string_list():
+            if( link  and key == 'name'):
+                table_row += create_html_table_cell('<a target="_blank" href="/'+ _type.lower() +'/?id='+model_dict['pk']+'">' + model_dict[key] + '</a>')
+            elif( key == 'pk'):
+                table_row += create_html_table_cell(model_dict[key], True)
+            else:
+                table_row += create_html_table_cell(model_dict[key])
+
+        if delete:
+            table_row += create_html_table_cell('''<button class="btn btn-danger"
+            onclick="$(this).closest(\'tr\').remove()";>X</button>''')
+
+        html += (table_row + '</tr>')
+
+    return html + '''</table>'''
 
 class SpecieDescriptionForm(forms.ModelForm):
     class Meta:
@@ -113,7 +158,6 @@ class SpecieDescriptionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(SpecieDescriptionForm, self).__init__(*args, **kwargs)
         format_widgets(self)
-
 
 class MoneyInput(forms.widgets.NumberInput):
     def __init__(self, *args, **kwargs):
@@ -304,8 +348,6 @@ class VisitForm(forms.ModelForm):
         return False
 
 
-
-
 class OwnerForm2():
     def __init__(self, *args, **kwargs):
         pass
@@ -361,8 +403,6 @@ class HiddenField(object):
         return generate_html_input_field("form-control",self.name,
         g_form_placeholders[self.name], html_type='input', value=self.value,
         input_type='hidden', maxlength='', label=False)
-
-
 
 class TextField(object):
     def __init__(self, name, value="", max_length=500, required=False,
@@ -476,7 +516,7 @@ def model_field_to_form_field(field):
     else:
         return None
 
-def genereate_fields(form_self):
+def genereate_fields(form_self, many_to_many_options={}):
     #find responding model
     if( form_self and form_self.__class__ and form_self.__class__.__name__ and
         (form_self.__class__.__name__[:-4] in models.__all__ )):
@@ -495,7 +535,9 @@ def genereate_fields(form_self):
 
         #generate many_to_many tables
         for i in range(0,len(model._meta.many_to_many)):
-            pass
+            field = TableField(_type=model._meta.many_to_many[i].related_model.__name__,
+                            name='', objects=[], link=True, delete=True, add=True)
+            setattr(form_self, model._meta.many_to_many[i].name, field)
 
         return True
     return False
