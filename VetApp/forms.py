@@ -380,13 +380,15 @@ def generate_html_input_field(_class,name, placeholder, html_type, value="",
 
     return html
 
+
 class CharField(object):
     def __init__(self, name, value="", max_length=255, required=False, label='True'):
         self.name = name
-        self.value = value
         self.max_length = max_length
         self.label = label
         self.required = required
+        self.error = None
+        self.set_value(value)
 
     def __str__(self):
         return generate_html_input_field("form-control",self.name,
@@ -394,26 +396,49 @@ class CharField(object):
         input_type='text', maxlength=self.max_length,label=self.label,
         required=self.required)
 
+    def set_value(self, value):
+        value = str(value)
+        if len(value) < self.max_length and ((len(value) > 0) if self.required else True):
+            self.value = value
+            return True
+        else:
+            self.value = None
+            self.error = "Too long string"
+            return False
+
 class HiddenField(object):
-    def __init__(self, name, value=''):
+    def __init__(self, name, value='', max_length=255):
         self.name = name
-        self.value = value
+        self.max_length = max_length
+        self.error = None
+        self.set_value(value)
+
 
     def __str__(self):
         return generate_html_input_field("form-control",self.name,
         g_form_placeholders[self.name], html_type='input', value=self.value,
-        input_type='hidden', maxlength='', label=False)
+        input_type='hidden', maxlength=self.max_length, label=False)
+
+    def set_value(self, value):
+        if len(str(value)) < self.max_length:
+            self.value = str(value)
+            return True
+        else:
+            self.value = None
+            self.error = "Too long string"
+            return False
 
 class TextField(object):
     def __init__(self, name, value="", max_length=500, required=False,
     label='True', cols=40, rows=5):
         self.name = name
-        self.value = value
         self.max_length = max_length
         self.label = label
         self.required = required
         self.cols=cols
         self.rows=rows
+        self.error = None
+        self.set_value(value)
 
     def __str__(self):
         return generate_html_input_field("form-control",self.name,
@@ -422,13 +447,24 @@ class TextField(object):
         required=self.required, other_tags='cols="{0}" rows="{1}"'.format(
         self.cols, self.rows))
 
+    def set_value(self, value):
+        value = str(value)
+        if len(value) < self.max_length and ((len(value) > 0) if self.required else True):
+            self.value = value
+            return True
+        else:
+            self.value = None
+            self.error = "Too long string"
+            return False
+
 class EmailField(object):
     def __init__(self, name, value="", max_length=50, required=False, label='True'):
         self.name = name
-        self.value = value
-        self.label = label
         self.max_length = max_length
+        self.label = label
         self.required = required
+        self.error = None
+        self.set_value(value)
 
     def __str__(self):
         return generate_html_input_field("form-control",self.name,
@@ -436,12 +472,36 @@ class EmailField(object):
         input_type='email', maxlength=self.max_length,label=self.label,
         required=self.required)
 
+    def set_value(self, value):
+        value = str(value)
+        if len(value) < self.max_length:
+            if '@' in value:
+                self.value = value
+                return True
+            elif value == '':
+                if self.required:
+                    self.value = ''
+                    self.error = "Field is required"
+                    return False
+                else:
+                    self.value = ''
+                    return True
+            else:
+                self.value = ''
+                self.error = "@ is missing"
+                return False
+        else:
+            self.value = ''
+            self.error = "Too long string"
+            return False
+
 class DateTimeField(object):
     def __init__(self, name, value="", required=False, label='True'):
         self.name = name
-        self.value = value
         self.label = label
         self.required = required
+        self.error = None
+        self.set_value(value)
 
     def __str__(self):
         return generate_html_input_field("form-control",self.name,
@@ -449,27 +509,68 @@ class DateTimeField(object):
         input_type='datetime-local', maxlength='',label=self.label,
         required=self.required)
 
+    def set_value(self, value):
+        print("Check what is this value (DateTime): ", value)
+        if(value == '' or value == None):
+            if not self.required:
+                self.value = datetime(year=2000, month=1, day=1)
+                return True
+            else:
+                self.error = "Field is required"
+                self.value = None
+                return False
+        elif(False): #TODO implement string to datetime convertion
+            pass
+            return True
+        else:
+            self.error = "can not convert given value to datetime"
+            return False
+
 class BooleanField(object):
-    def __init__(self, name, label='True', value=''):
+    def __init__(self, name, label='True', value=False):
         self.name = name
         self.label = label
-        self.value = value
-
-        #TODO: set value when it is given
+        self.error = None
+        self.set_value(value)
 
     def __str__(self):
         return generate_html_input_field("form-control",self.name,
-        g_form_placeholders[self.name], 'input','',
+        g_form_placeholders[self.name], 'input',value=self.value,
         input_type='checkbox', maxlength='',label=self.label,
         required=False)
+
+    def set_value(self, value):
+        if type(value == bool):
+            self.value = value
+            return True
+        elif type(value) == str and value.lower() in ['true', 'false']:
+            self.value = (value.lower() == 'true')
+            return True
+        else:
+            self.error = 'Can not convert value to bool'
+            self.value = False
+            return False
 
 class ForeignKeyField(object):
     def __init__(self, name, selected_id=None, required=False, label=True,options=[]):
         self.name = name
-        self.selected_id = selected_id
         self.required = required
         self.label = label
         self.options = options
+        self.error = None
+
+        if isinstance(selected_id, int):
+            self.selected_id = selected_id
+        elif isinstance(selected_id, str) and selected_id.isdigit():
+            self.selected_id = int(selected_id)
+        else:
+            self.selected_id = selected_id #TODO convert to None!
+            if selected_id != None:
+                self.error = "Can not conver selected_id to integer"
+            elif self.required:
+                self.error = "Field is required"
+            else:
+                pass
 
     def __str__(self):
         html = '<tr>'
@@ -522,6 +623,19 @@ def model_field_to_form_field(field, value=''):
 def get_model_class_from_form(form_self):
     return eval(form_self.__class__.__name__[:-4])
 
+
+def validate_form_data(form_self):
+    model_class = get_model_class_from_form(form_self)
+
+    for i in range(0,len(model_class._meta.fields)):
+        name = str(model_class._meta.fields[i]).split('.')[-1]
+        if getattr(form_self, name).error:
+            print("Found ERROR", getattr(form_self, name).error)
+            return False
+
+    #TODO: check also many_to_many tables
+    return True
+
 #gets from as inputs and makes correct fields for it and fills them if nessessary
 def genereate_fields(form_self, many_to_many_options={}):
     #find responding model
@@ -549,7 +663,6 @@ def genereate_fields(form_self, many_to_many_options={}):
                 name='', objects=Animal.objects.all(),#getattr(model, model_class._meta.many_to_many[i].name).all() if model else [],
                 link=True, delete=True, add=True)
             setattr(form_self, model_class._meta.many_to_many[i].name, field)
-
         return True
     return False
 
@@ -578,8 +691,6 @@ class OwnerForm(object):
         else:
             print("Error at Initialization")
 
-    # def is_valid(self):
-    #     return True
 
 
 

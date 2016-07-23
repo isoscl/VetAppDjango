@@ -183,15 +183,13 @@ function getTableObjects(table_name, return_func){
         ", it should have: " + header_list.length);
         return_func(objects);
       }else{
-        console.log("looping")
         for(var i = 1; i < table.rows.length; i++){
           var object = {};
           for(var j = 0; j < header_list.length; j++){
             object[header_list[j]] = table.rows[i].cells[j].innerHTML;
           }
-          objects.push(object);
+          objects.push(JSON.stringify(object));
         }
-        console.log("Objects are: "+ objects);
         return_func(objects);
       }
     });

@@ -124,16 +124,14 @@ class VisitItems(models.Model):
 class Owner(models.Model):
     name = models.CharField(max_length=100)
     address = models.CharField(max_length=100, blank=True)
-
     post_office = models.ForeignKey('PostOffice',  on_delete=models.CASCADE, blank=True, null=True)
-
-    animals = models.ManyToManyField(Animal, blank=True)
-
     phonenumber = models.CharField(max_length=100, blank=True)
     email = models.EmailField(max_length=100, blank=True)
     other_info = models.TextField(max_length=500, blank=True)
-
     archive = models.BooleanField(default=False)
+
+    animals = models.ManyToManyField(Animal, blank=True)
+
     def getText(self=None):
         return 'owner'
     def __str__(self):

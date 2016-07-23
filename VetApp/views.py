@@ -194,6 +194,10 @@ class OwnerView(BaseView):
         form_name,  html_path = getFormNameAndPath(OwnerForm)
         self.context[form_name] = OwnerForm(self.request.POST)
 
+        from VetApp.forms import validate_form_data
+        if validate_form_data(self.context[form_name]):
+            pass
+
         if self.context[form_name].is_valid():
             print(self.context[form_name].cleaned_data)
 
