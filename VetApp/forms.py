@@ -110,7 +110,7 @@ def create_table(_type, name, objects=[], link=True, delete=True, add=True):
     if add:
         html += '''<div class="ui-widget">
           <input id="{0}-search"> </input>
-        <button type="button" id="{0}-add-btn" class="btn btn-primary"> Add </button>
+        <button type="button" id="{0}-add-btn" class="btn btn-primary" onclick="addButtonFunction('Animal','',true)"> Add </button>
         </div>'''.format(table_name)
     html += '''<table id="{0}" class="table table-striped table-hover table-condensed">
             <tr>
@@ -522,6 +522,7 @@ def model_field_to_form_field(field, value=''):
 def get_model_class_from_form(form_self):
     return eval(form_self.__class__.__name__[:-4])
 
+#gets from as inputs and makes correct fields for it and fills them if nessessary
 def genereate_fields(form_self, many_to_many_options={}):
     #find responding model
     if( form_self and form_self.__class__ and form_self.__class__.__name__ and
@@ -531,12 +532,6 @@ def genereate_fields(form_self, many_to_many_options={}):
         model = None
         if hasattr(form_self, 'model'):
             model = form_self.model
-        #     setattr(form_self, 'pk', CharField(name='pk', max_length=128,
-        #      required = True, value=model.pk) )
-        # else:
-        #     setattr(form_self, 'pk', CharField(name='pk', max_length=0,
-        #      required = False, value=''))
-
 
         #generate basic fields
         for i in range(0,len(model_class._meta.fields)):
@@ -558,49 +553,33 @@ def genereate_fields(form_self, many_to_many_options={}):
         return True
     return False
 
+
+def get_model_by_pk(form_self, _pk):
+    return get_model_class_from_form(form_self).objects.get(pk=_pk)
+
+def args_have_valid_id(args):
+    return len(args) > 0 and ('id' in args[0]) and args[0]['id'] != ''
+
+#Possible uses
+# args = {} is when user wants to create new owner
+# args = {'id': ['123']} is when user wants to open user
+#
 class OwnerForm(object):
     def __init__(self, *args, **kwargs):
         print("OwnerForm: args: ", args, ' kwargs: ', kwargs)
 
-        #get wanted model
-        if len(args) > 0 and ('id' in args[0]) and args[0]['id'] != '':
-            self.model = get_model_class_from_form(self).objects.get(pk=args[0]['id'])
+        if args_have_valid_id(args):
+            self.model = get_model_by_pk(self, args[0]['id']) #load model from DB
+            if len(args[0]) > 1:
+                self.args = args[0]
 
         if(genereate_fields(self)):
             print("Initialization ok")
         else:
             print("Error at Initialization")
 
-    def __str__(self):
-        return '<b>test</b>'
-        # print(generate_html_input_field("form-control",'name', 'placeholder', 'input', 'text', label=True))
-
-        #print(self.__class__.__name__[:-4])
-
-        # print(type(Owner._meta.fields[0]))
-        # print(Owner._meta.many_to_many[0])
-        # print()
-
-        #Owner._meta.related_objects has linked fields like Visits
-
-        # for i in range(0,len(Owner._meta.fields)):
-        #     field = Owner._meta.fields[i]
-        #     #if(str(type(field)).split('.')[-1][:-2] == 'ForeignKey'):
-        #         #print(field.related_model.objects.all())
-        #     print(str(type(field)).split('.')[-1][:-2], field.name, field.blank, field.max_length, field.help_text)
-
-            # if ('django.db.models.field' in str(type(Owner.__dict__[key])) ):
-            #     print(str(type(Owner.__dict__[key])))
-
-
-    # def __repr__(self):
-    #     return '<%(cls)s bound=%(bound)s, valid=%(valid)s, fields=(%(fields)s)>' % {
-    #         'cls': self.__class__.__name__,
-    #         'bound': True,#self.is_bound,
-    #         'valid': True, #is_valid,
-    #         'fields': ';'.join([self.name, self.animal])#self.fields),
-    #     }
-        #return '<a> HEI </a>'
+    # def is_valid(self):
+    #     return True
 
 
 

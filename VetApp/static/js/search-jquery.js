@@ -63,7 +63,7 @@ function insertObjectToTable(table_name, object, link){
       for(; i < header_list.length; i++){
         row.insertCell(i).innerHTML = object[header_list[i]];
       }
-      row.insertCell(i).innerHTML = '<button onclick="$(this).closest(\'tr\').remove()";>X</button>'
+      row.insertCell(i).innerHTML = '<button type="button" class="btn btn-danger" onclick="$(this).closest(\'tr\').remove()";>X</button>'
     });
   }else{
     alert("insertObjectToTable-function can not find table named: "+ table_name);
@@ -226,31 +226,25 @@ function get_search_json(_type, table_name){
 }
 
 function initAutocomplete(_type, _name){
+  var name = create_table_name(_type, _name);
   var item = $( "#"+ name +"-search" );
   if(item){
-    var name = create_table_name(_type, _name);
     item.autocomplete(get_search_json(_type, name));
   }
 }
 
-function initAddButton(_type, _name){
-  var item = $("#" + name + "-add-btn");
-  if(item){
-    var name = create_table_name(_type, _name);
-    localStorage.setItem(name+"-search-selected-object",undefined);
-    item.click( function(event){
-        console.log("cliked button");
-        json_string = localStorage.getItem(name+"-search-selected-object" );
-        if(json_string !== 'undefined'){
-          console.log("add object to list");
-          insertObjectToTable(name, JSON.parse(json_string));
-        }else{
-          console.log("No object to be added");
-        }
-    });
-    console.log("inited button: " + "#" + name + "-add-btn")
+function addButtonFunction(_type, _name, haslink){
+  var name = create_table_name(_type, _name);
+
+  console.log('name is: ' + name);
+  // get obejct from loacal storage and delete it from there
+  json_string = localStorage.getItem(name+"-search-selected-object" );
+  localStorage.setItem(name+"-search-selected-object",undefined);
+  if(json_string !== 'undefined'){
+    console.log("add object to list");
+    insertObjectToTable(name, JSON.parse(json_string), haslink);
   }else{
-    console.log("could not found add button named: "+ "#" + name + "-add-btn")
+    console.log("No object to be added");
   }
 }
 
@@ -271,7 +265,7 @@ function submitForm(_class){
 $(document).ready(function() {
 
   initAutocomplete('Animal','');
-  initAddButton('Animal','');
+  //initAddButton('Animal','');
   console.log("inited");
 
 
