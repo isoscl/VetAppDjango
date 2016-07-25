@@ -71,34 +71,8 @@ class BaseView(View):
         else:
             self.context = {'auth_form':''}
 
-
-        #self.context['animal_table'] = create_table(_type='Animal', name="", objects=Animal.objects.all(),
-        #                                            link=True, delete=True, add=True)
-
-
         if self.request.session.__contains__('init'):
             self.request.session.__setitem__('init', True)
-
-    #initForm and return render or 404
-    def initFormAndRender(self, form, form_name=None, html_path=None):
-
-        form_name, html_path = getFormNameAndPath(form)
-
-        print('GET: ', self.request.GET)
-        if(len(self.request.GET) > 0):
-            self.context[form_name] = form(self.request.GET)
-        else:
-            self.context[form_name] = form()
-
-        #print(self.context[form_name])
-
-        # print("FORM is: ", self.context[form_name])
-
-        #create_table
-
-
-        return render(self.request, html_path, self.context)
-
 
     def Alert(self, message):
         if not 'alert_message' in self.context:
@@ -114,69 +88,38 @@ class BaseView(View):
         print("Error")
         raise Http404("BaseView used! Even it should not")
 
-    def saveFormAndRender(self, form, form_name=None, html_path=None):
-        if form_name is None:
-            form_name = form.__name__[:-4].lower() + '_form' # XXXFORM -> xxx_form
+    #initForm and return render or 404
+    def initFormAndRender(self, form, form_name=None, html_path=None):
 
-        if html_path is None:
-            html_path = form.__name__[:-4].lower() + '.html'
+        form_name, html_path = getFormNameAndPath(form)
+
+        print('GET: ', self.request.GET)
+
+        self.context[form_name] = form(self.request.GET)
+
+        return render(self.request, html_path, self.context)
+
+    def saveFormAndRender(self, form, form_name=None, html_path=None):
+        form_name, html_path = getFormNameAndPath(form)
 
         print('POST: ', self.request.POST)
         self.context[form_name] = form(self.request.POST)
 
-        errors = self.context[form_name].hasErrors()
-        if errors:
-            pass
-        else: # no errors
-            if self.context[form_name].save(): #save succsessed
-                pass
-            else: #was not able to save form
-                pass
+        from VetApp.forms import get_errors_from_form, save_form_data
 
-        if self.context[form_name].is_valid():
-            print(self.context[form_name].cleaned_data)
-
-            print("Is valid")
-            _id = self.request.POST['id']
-
-            obj = None
-            if not _id is (None or ''):
-                if _id.isdigit(): #check that id is valid
-                    try:
-                        print("get object")
-                        obj = form.Meta.model.objects.get(id=int(_id))
-                    except ObjectDoesNotExist:
-                        return Http404()
-                else:
-                    return Http404()
-            else:
-                print("new object")
-                obj = form.Meta.model() #new object
-
-            save_after_object_variables = []
-            if hasattr(form.Meta, 'save_after_object'):
-                save_after_object_variables = form.Meta.save_after_object
-
-            print(form.Meta, save_after_object_variables)
-            for label_name in self.context[form_name].cleaned_data:
-                if not (label_name == 'pk') and not (label_name in save_after_object_variables):
-                    print('----',obj, label_name, self.context[form_name].cleaned_data[label_name])
-                    setattr(obj, label_name, self.context[form_name].cleaned_data[label_name])
-            obj.save()
-            if len(save_after_object_variables) > 0:
-                #self.context[form_name].saveRelatedObjects()
-
-                for label_name in save_after_object_variables:
-                    setattr(obj, label_name, self.context[form_name].cleaned_data[label_name])
-                obj.save()
-
-            self.request.message = g_save_tests['saved']
-
-            return redirect('/'+form.__name__[:-4].lower()+'/?id='+str(obj.pk)+'&saved')
-        else:
-            print("Error")
+        errors = get_errors_from_form(self.context[form_name])
+        if errors != None:
+            print("saveFormAndRender, form has errors: ", errors)
+            self.context['errors'] = json.stringify(errors)
             return render(self.request, html_path, self.context)
-
+        else: # no errors
+            if save_form(self.context[form_name]): #save succsessed
+                self.context['saved'] = 'Model saved'
+                return render(self.request, html_path, self.context)
+            else: #was not able to save form
+                print("saveFormAndRender, form could not be saved")
+                self.context['errors'] = json.stringify({'save_error':"saveFormAndRender, form could not be saved"})
+                return render(self.request, html_path, self.context)
 
 
 class IndexView(BaseView):
@@ -203,7 +146,10 @@ class OwnerView(BaseView):
         form_name,  html_path = getFormNameAndPath(OwnerForm)
         self.context[form_name] = OwnerForm(self.request.POST)
 
-        from VetApp.forms import validate_form_data
+        get_errors_from_form()
+
+        from VetApp.forms import get_errors_from_form
+        errors  = get_errors_from_form()
         if validate_form_data(self.context[form_name]):
             pass
 

@@ -53,14 +53,11 @@ def get_object(_pk, obj):
             return None #TODO: this error should be handled
     return None
 
-
-
 def set_pk(self, obj):
     _pk = None
     if obj:
         _pk = obj.pk
     self.fields['pk'] = forms.IntegerField(widget = forms.HiddenInput(), required=False, initial=_pk)
-
 
 def format_widgets(self):
     if hasattr(self,'Meta'): #TODO: remove this old when changed to new
@@ -77,8 +74,7 @@ def model_attrs_to_tuple(model):
             args[key.name] = getattr(model,key.name)
     return (args,) #"cast" dict to tuple
 
-def create_table_name(_type, name):
-    return _type + "_" + name + "_table"
+
 
 
 def make_js_query(_type):
@@ -86,7 +82,12 @@ def make_js_query(_type):
 
 class TableField(object):
     def __init__(self,_type,name, objects=[], link=True, delete=True, add=True):
-        self._type=_type
+        self.error = None
+        if _type in models.__all__:
+            self._type=_type
+        else:
+            self._type = None
+            self.error = 'Can not create table with type: '+ str(_type)
         self.name = name
         self.objects = objects
         self.link = link
@@ -97,6 +98,9 @@ class TableField(object):
         return create_table(_type = self._type, name = self.name,
                             objects=self.objects, link=self.link,
                             delete=self.delete, add=self.add)
+
+def create_table_name(_type, name):
+    return _type + "_" + name + "_table"
 
 def create_html_table_cell(string, hidden=False):
     if(hidden):
@@ -116,16 +120,14 @@ def create_table(_type, name, objects=[], link=True, delete=True, add=True):
             <tr>
                 <th style="display:none" width="0%"></th>'''.format(table_name)
 
-    if _type in models.__all__:
+    if _type:
         header_list = eval('models.'+_type).table_header_string_list()
 
         for i in range(1, len(header_list)):
             html += '<th >%s</th>' % g_form_labels[header_list[i]]
-    else:
-        print("ERROR: forms.py create_table() can not find object named: " + _type)
 
-    if delete:
-        html += '<th></th>'
+        if delete:
+            html += '<th></th>'
 
     html += '</tr>' # last cell for button
 
@@ -149,15 +151,6 @@ def create_table(_type, name, objects=[], link=True, delete=True, add=True):
 
     return html + '''</table>'''
 
-class SpecieDescriptionForm(forms.ModelForm):
-    class Meta:
-        model = SpecieDescription
-        fields = ['text']
-        labels = translate_labels(fields)
-
-    def __init__(self, *args, **kwargs):
-        super(SpecieDescriptionForm, self).__init__(*args, **kwargs)
-        format_widgets(self)
 
 class MoneyInput(forms.widgets.NumberInput):
     def __init__(self, *args, **kwargs):
@@ -379,7 +372,6 @@ def generate_html_input_field(_class,name, placeholder, html_type, value="",
     ('' if not required else 'required'), value, other_tags)
 
     return html
-
 
 class CharField(object):
     def __init__(self, name, value="", max_length=255, required=False, label='True'):
@@ -623,10 +615,9 @@ def model_field_to_form_field(field, value=''):
 def get_model_class_from_form(form_self):
     return eval(form_self.__class__.__name__[:-4])
 
-
 def get_errors_from_form(form_self):
     model_class = get_model_class_from_form(form_self)
-    errors = []
+    errors = {}
 
     #check if any field has errors
     for i in range(0,len(model_class._meta.fields)):
@@ -634,9 +625,19 @@ def get_errors_from_form(form_self):
         error = getattr(form_self, name).error
         if error:
             print("get_errors_from_form, Found error: ", error)
-            errors.append(error)
+            errors['field_'+name] = error
 
-    #TODO: check also many_to_many tables
+    #check if any table has errors
+    for i in range(0,len(model_class._meta.many_to_many)):
+        name = model_class._meta.many_to_many[i].name
+        error = getattr(form_self, name).error
+        if error:
+            print("get_errors_from_form, Found error: ", error)
+            errors['field_'+name] = error
+
+    #check if the actual form has errors
+    if len(form_self.errors) > 0:
+        errors[form_self.__class__.__name__] = form_self.errors
 
     if len(errors) == 0:
         return None
@@ -644,76 +645,121 @@ def get_errors_from_form(form_self):
         return errors
 
 
-def validate_form_data(form_self):
+def __clean_data_for_table(data):
+    print('Data type is: ',type(data), ' data is: ', data)
+    #TODO: implement the data conversion
+    return data
+
+
+def __generate_fields(form_self, data = {}, table_options={}):
+    #generate basic fields
     model_class = get_model_class_from_form(form_self)
 
-    #check if any field has errors
+    for field_name in form_self.field_names:
+        print("Generating fields: ", field_name)
+        print("model field should be ", model_class._meta.fields[field_name])
+        field = model_field_to_form_field(model_class._meta.fields[field_name], data[field_name] if field_name in data else '')
+        if(field):
+            setattr(form_self, field_name, field)
+        else:
+            form_self.errors.append("model_field_to_form_field could not make field for", field_name)
+            print("model_field_to_form_field could not make field for", field_name)
+
+
+    #=getattr(model, model_class._meta.many_to_many[i].name).all()
+    #generate many_to_many tables
+
+    for field_name in form_self.many_to_many_fields_names:
+        table_dict = table_options[field_name] if field_name in table_options else {}
+        field = TableField(_type=model_class._meta.many_to_many[i].related_model.__name__,
+            name=table_dict['name'] if 'name' in table_dict else '',
+            objects= __clean_data_for_table(data[field_name]) if data else [],
+            link=table_dict['link'] if 'link' in table_dict else True,
+            delete=table_dict['delete'] if 'delete' in table_dict else True,
+            add=table_dict['add'] if 'add' in table_dict else True)
+        setattr(form_self, field_name, field)
+
+#generate
+def __form_generic_init(form_self, args, table_options={}):
+    form_self.errors = []
+
+    model_class = get_model_class_from_form(form_self)
+
+    #get field names
+    form_self.field_names = []
     for i in range(0,len(model_class._meta.fields)):
-        name = str(model_class._meta.fields[i]).split('.')[-1]
-        if getattr(form_self, name).error:
-            print("Found ERROR", getattr(form_self, name).error)
-            return False
+        form_self.field_names.append(str(model_class._meta.fields[i]).split('.')[-1])
+    #get field names for many to many relations
+    form_self.many_to_many_fields_names = []
+    for i in range(0,len(model_class._meta.many_to_many)):
+        form_self.many_to_many_fields_names.append(model_class._meta.many_to_many[i].name)
 
-    #TODO: check also many_to_many tables
-    return True
+    #Choose what kind of event is making this form
+    if len(args) > 0 and ('id' in args[0]) and args[0]['id'] != '':
+        #we should have model in databace
+        model = model_class.objects.get(pk=args[0]['id'])
+        form_self.model = model
+        if model != None:
+            #fill data dict with data from args or from model
+            data = {}
 
-#gets from as inputs and makes correct fields for it and fills them if nessessary
-def genereate_fields(form_self, many_to_many_options={}):
-    #find responding model
-    if( form_self and form_self.__class__ and form_self.__class__.__name__ and
-        (form_self.__class__.__name__[:-4] in models.__all__ )):
-        #eval model
-        model_class = get_model_class_from_form(form_self)
-        model = None
-        if hasattr(form_self, 'model'):
-            model = form_self.model
+            for field_name in form_self.field_names:
+                if field_name in args[0]:
+                    data[field_name] = args[0][field_name]
+                else:
+                    data[field_name] = getattr(model,field_name)
 
-        #generate basic fields
-        for i in range(0,len(model_class._meta.fields)):
-            print("Making field: ", model_class._meta.fields[i])
-            field = model_field_to_form_field(model_class._meta.fields[i],
-                value=(getattr(model, str(model_class._meta.fields[i]).split('.')[-1] ) if model else ''))
-            if(field):
-                setattr(form_self, field.name, field)
-            else:
-                print("model_field_to_form_field could not make field for", model_class._meta.fields[i])
+            for field_name in form_self.many_to_many_fields_names:
+                if field_name in args[0]:
+                    data[field_name] = args[0][field_name]
+                else:
+                    data[field_name] = getattr(model,field_name)
 
-        #generate many_to_many tables
-        for i in range(0,len(model_class._meta.many_to_many)):
-            field = TableField(_type=model_class._meta.many_to_many[i].related_model.__name__,
-                name='', objects=Animal.objects.all(),#getattr(model, model_class._meta.many_to_many[i].name).all() if model else [],
-                link=True, delete=True, add=True)
-            setattr(form_self, model_class._meta.many_to_many[i].name, field)
-        return True
-    return False
+            __generate_fields(form_self, data = data, table_options=table_options)
+        else:
+            form_self.errors.append("No model with id: " + str(args[0]['id']))
+            __generate_fields(form_self, data = {}, table_options=table_options) #make empty form
+    else:
+        if len(args) > 0:
+            __generate_fields(form_self, data = args[0], table_options=table_options)
+        else:
+            __generate_fields(form_self, data = {}, table_options=table_options)
 
 
-def get_model_by_pk(form_self, _pk):
-    return get_model_class_from_form(form_self).objects.get(pk=_pk)
+#saves the data stored in form object to database
+def save_form_data(self_form):
+    new_model = False
+    #check if form data is for new model
+    if not hasattr(self_form, 'model'):
+        form_self.model = get_model_class_from_form(form_self)() #create empty model
+        new_model = True
 
-def args_have_valid_id(args):
-    return len(args) > 0 and ('id' in args[0]) and args[0]['id'] != ''
+    for field_name in form_self.fields_names:
+        setattr(self_form.model,field_name, getattr(self_form, field_name).value)
+
+    #save before many_to_many relations, because new model do not yet have pk
+    #so those relations can not be created
+    if new_model:
+        self_form.model.save()
+
+    for field_name in form_self.many_to_many_fields_names:
+        setattr(self_form.model,field_name, getattr(self_form, field_name).objects)
+
+    self_form.model.save()
 
 #Possible uses
-# args = {} is when user wants to create new owner
+# args = {} is when user wants to create new ownermodel_class
 # args = {'id': ['123']} is when user wants to open user
 #
 class OwnerForm(object):
     def __init__(self, *args, **kwargs):
-        print("OwnerForm: args: ", args, ' kwargs: ', kwargs)
-
-        if args_have_valid_id(args):
-            self.model = get_model_by_pk(self, args[0]['id']) #load model from DB
-            if len(args[0]) > 1:
-                self.args = args[0]
-
-        if(genereate_fields(self)):
-            print("Initialization ok")
-        else:
-            print("Error at Initialization")
-
-
-
+        print('Type: ',type(self), ": args: ", args, ' kwargs: ', kwargs)
+        __form_generic_init(self, args=args, table_options={'animals':{
+        'name':'',
+        'link':True,
+        'delete': True,
+        'add':True
+        }})
 
 class OwnerForm2(forms.Form):
     name = forms.CharField(label=g_form_labels['name'], max_length=100)
@@ -797,6 +843,16 @@ class OwnerForm_old(forms.ModelForm):
 
         print("Owner fields: ",self.fields)
         #help(self.fields["animals"])
+
+class SpecieDescriptionForm(forms.ModelForm):
+    class Meta:
+        model = SpecieDescription
+        fields = ['text']
+        labels = translate_labels(fields)
+
+    def __init__(self, *args, **kwargs):
+        super(SpecieDescriptionForm, self).__init__(*args, **kwargs)
+        format_widgets(self)
 
 #self.fields['pk'] = forms.IntegerField(widget = forms.HiddenInput(),
 #required=False, initial=_pk)
