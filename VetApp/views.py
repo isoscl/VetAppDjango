@@ -124,6 +124,15 @@ class BaseView(View):
         print('POST: ', self.request.POST)
         self.context[form_name] = form(self.request.POST)
 
+        errors = self.context[form_name].hasErrors()
+        if errors:
+            pass
+        else: # no errors
+            if self.context[form_name].save(): #save succsessed
+                pass
+            else: #was not able to save form
+                pass
+
         if self.context[form_name].is_valid():
             print(self.context[form_name].cleaned_data)
 

@@ -624,9 +624,30 @@ def get_model_class_from_form(form_self):
     return eval(form_self.__class__.__name__[:-4])
 
 
+def get_errors_from_form(form_self):
+    model_class = get_model_class_from_form(form_self)
+    errors = []
+
+    #check if any field has errors
+    for i in range(0,len(model_class._meta.fields)):
+        name = str(model_class._meta.fields[i]).split('.')[-1]
+        error = getattr(form_self, name).error
+        if error:
+            print("get_errors_from_form, Found error: ", error)
+            errors.append(error)
+
+    #TODO: check also many_to_many tables
+
+    if len(errors) == 0:
+        return None
+    else:
+        return errors
+
+
 def validate_form_data(form_self):
     model_class = get_model_class_from_form(form_self)
 
+    #check if any field has errors
     for i in range(0,len(model_class._meta.fields)):
         name = str(model_class._meta.fields[i]).split('.')[-1]
         if getattr(form_self, name).error:
