@@ -9,7 +9,9 @@ from VetApp import models
 from VetApp.models import *
 from VetApp.items import *
 
-from datetime import datetime
+from datetime import datetime, date
+
+import json
 
 import logging
 
@@ -394,7 +396,7 @@ class CharField(object):
             self.value = value
             return True
         else:
-            self.value = None
+            self.value = ''
             self.error = "Too long string"
             return False
 
@@ -416,7 +418,7 @@ class HiddenField(object):
             self.value = str(value)
             return True
         else:
-            self.value = None
+            self.value = ''
             self.error = "Too long string"
             return False
 
@@ -445,7 +447,7 @@ class TextField(object):
             self.value = value
             return True
         else:
-            self.value = None
+            self.value = ''
             self.error = "Too long string"
             return False
 
@@ -505,11 +507,42 @@ class DateTimeField(object):
         print("Check what is this value (DateTime): ", value)
         if(value == '' or value == None):
             if not self.required:
-                self.value = datetime(year=2000, month=1, day=1)
+                self.value = datetime(year=2000, month=1, day=1, hour=0, minute=0, second=0)
                 return True
             else:
                 self.error = "Field is required"
-                self.value = None
+                self.value = ''
+                return False
+        elif(False): #TODO implement string to datetime convertion
+            pass
+            return True
+        else:
+            self.error = "can not convert given value to datetime"
+            return False
+
+class DateField(object):
+    def __init__(self, name, value="", required=False, label='True'):
+        self.name = name
+        self.label = label
+        self.required = required
+        self.error = None
+        self.set_value(value)
+
+    def __str__(self):
+        return generate_html_input_field("form-control",self.name,
+        g_form_placeholders[self.name], 'input',self.value,
+        input_type='date', maxlength='',label=self.label,
+        required=self.required)
+
+    def set_value(self, value):
+        print("Check what is this value (Date): ", value)
+        if(value == '' or value == None):
+            if not self.required:
+                self.value = date(year=2000, month=1, day=1)
+                return True
+            else:
+                self.error = "Field is required"
+                self.value = ''
                 return False
         elif(False): #TODO implement string to datetime convertion
             pass
@@ -598,8 +631,9 @@ def model_field_to_form_field(field, value=''):
     elif(_type == 'BooleanField'):
         return BooleanField(name=field.name, value=value)
     elif(_type == 'DateTimeField'):
-        return DateTimeField(name=field.name, max_length=field.max_length,
-         required = not field.blank, value=value)
+        return DateTimeField(name=field.name, required = not field.blank, value=value)
+    elif(_type == 'DateField'):
+        return DateField(name=field.name, required = not field.blank, value=value)
     elif(_type == 'ForeignKey'):
         return ForeignKeyField(name=field.name, required = not field.blank,
         options=field.related_model.objects.all(), selected_id=(value.pk if hasattr(value, 'pk') else None))
@@ -645,42 +679,53 @@ def get_errors_from_form(form_self):
         return errors
 
 
-def __clean_data_for_table(data):
+def _clean_data_for_table(data, object_model):
     print('Data type is: ',type(data), ' data is: ', data)
-    #TODO: implement the data conversion
-    return data
+
+    objects = []
+    if type(data) is str:
+        for obj in json.loads('['+data+']'):
+            db_obj = object_model.objects.get(pk=obj['pk'])
+            if db_obj:
+                objects.append(db_obj)
+            else:
+                print("obejct with that pk was not found, pk=",obj['pk'])
+    else:
+        objects = data.all()
+    return objects
 
 
 def __generate_fields(form_self, data = {}, table_options={}):
     #generate basic fields
     model_class = get_model_class_from_form(form_self)
 
-    for field_name in form_self.field_names:
-        print("Generating fields: ", field_name)
-        print("model field should be ", model_class._meta.fields[field_name])
-        field = model_field_to_form_field(model_class._meta.fields[field_name], data[field_name] if field_name in data else '')
+    for i in range(0,len(model_class._meta.fields)):
+        field_name = str(model_class._meta.fields[i]).split('.')[-1]
+        field = model_field_to_form_field(model_class._meta.fields[i],
+                        data[field_name] if field_name in data else '')
         if(field):
             setattr(form_self, field_name, field)
         else:
-            form_self.errors.append("model_field_to_form_field could not make field for", field_name)
+            form_self.errors.append("model_field_to_form_field could not make field for "+ field_name)
             print("model_field_to_form_field could not make field for", field_name)
-
 
     #=getattr(model, model_class._meta.many_to_many[i].name).all()
     #generate many_to_many tables
 
-    for field_name in form_self.many_to_many_fields_names:
+    for i in range(0,len(model_class._meta.many_to_many)):
+        field_name = model_class._meta.many_to_many[i].name
         table_dict = table_options[field_name] if field_name in table_options else {}
-        field = TableField(_type=model_class._meta.many_to_many[i].related_model.__name__,
+        table_object_model = model_class._meta.many_to_many[i].related_model
+        field = TableField(_type=table_object_model.__name__,
             name=table_dict['name'] if 'name' in table_dict else '',
-            objects= __clean_data_for_table(data[field_name]) if data else [],
+            objects= _clean_data_for_table(data[field_name], table_object_model) if data else [],
             link=table_dict['link'] if 'link' in table_dict else True,
             delete=table_dict['delete'] if 'delete' in table_dict else True,
             add=table_dict['add'] if 'add' in table_dict else True)
         setattr(form_self, field_name, field)
 
 #generate
-def __form_generic_init(form_self, args, table_options={}):
+def _form_generic_init(form_self, args, table_options={}):
     form_self.errors = []
 
     model_class = get_model_class_from_form(form_self)
@@ -727,25 +772,44 @@ def __form_generic_init(form_self, args, table_options={}):
 
 
 #saves the data stored in form object to database
-def save_form_data(self_form):
+def save_form_data(form_self):
     new_model = False
     #check if form data is for new model
-    if not hasattr(self_form, 'model'):
+    if not hasattr(form_self, 'model'):
         form_self.model = get_model_class_from_form(form_self)() #create empty model
         new_model = True
 
-    for field_name in form_self.fields_names:
-        setattr(self_form.model,field_name, getattr(self_form, field_name).value)
+    for field_name in form_self.field_names:
+        field = getattr(form_self, field_name)
+        if hasattr(field, 'value'):
+            setattr(form_self.model,field_name, field.value)
+        elif hasattr(field, 'selected_id'):
+            setattr(form_self.model,field_name, field.selected_id)
+        else:
+            print("save_form_data, Can not get data from field, no value or selected_id found")
+
 
     #save before many_to_many relations, because new model do not yet have pk
     #so those relations can not be created
     if new_model:
-        self_form.model.save()
+        form_self.model.save()
 
     for field_name in form_self.many_to_many_fields_names:
-        setattr(self_form.model,field_name, getattr(self_form, field_name).objects)
+        setattr(form_self.model,field_name, getattr(form_self, field_name).objects)
 
-    self_form.model.save()
+    form_self.model.save()
+
+    return True  #TODO: iplement failure handling
+
+class AnimalForm(object):
+    def __init__(self, *args, **kwargs):
+        print('Type: ',type(self), ": args: ", args, ' kwargs: ', kwargs)
+        _form_generic_init(self, args=args)
+
+class VetForm(object):
+    def __init__(self, *args, **kwargs):
+        print('Type: ',type(self), ": args: ", args, ' kwargs: ', kwargs)
+        _form_generic_init(self, args=args)
 
 #Possible uses
 # args = {} is when user wants to create new ownermodel_class
@@ -754,95 +818,12 @@ def save_form_data(self_form):
 class OwnerForm(object):
     def __init__(self, *args, **kwargs):
         print('Type: ',type(self), ": args: ", args, ' kwargs: ', kwargs)
-        __form_generic_init(self, args=args, table_options={'animals':{
+        _form_generic_init(self, args=args, table_options={'animals':{
         'name':'',
         'link':True,
         'delete': True,
         'add':True
         }})
-
-class OwnerForm2(forms.Form):
-    name = forms.CharField(label=g_form_labels['name'], max_length=100)
-    address = forms.CharField(label=g_form_labels['address'], max_length=100, required=False)
-
-    #  = models.ForeignKey('PostOffice',  on_delete=models.CASCADE, blank=True, null=True)
-    #post_office = forms.ModelChoiceField(queryset=PostOffice.objects.all())
-    #animals = forms.ModelMultipleChoiceField(queryset=Animal.objects,required = False)
-
-    phonenumber = forms.CharField(label=g_form_labels['phonenumber'], max_length=100, required=False)
-    email = forms.CharField(label=g_form_labels['address'], max_length=100, required=False, widget=forms.EmailInput())
-    other_info = forms.CharField(label=g_form_labels['other_info'], max_length=500, required=False)
-
-    archive = forms.BooleanField(initial=False, required = False) #if reguired will say it is required
-    id = forms.CharField(widget = forms.HiddenInput(), required = False)
-
-
-
-    def __init__(self, *args, **kwargs):
-
-        print("args: ", args)
-        print("kwargs: ", kwargs)
-
-        class only_all():
-            def all():
-                return []
-
-        animal_query = []
-        if len(args) == 1:
-            owner = get_object(args[0].get('id', None),Owner)
-
-            # owner.animals = [get_object(args[0].get('id', None),Animal)]
-            # owner.save()
-
-            if owner:
-                args = model_attrs_to_tuple(owner)
-                animal_query = args[0]['animals']
-                args[0]['animals'] = None
-                print("Args are: ",args)
-            else:
-                logging.error("Owner not found")
-                pass #TODO:error!
-        else:
-            pass #pass on arguments as they are
-
-        super(OwnerForm, self).__init__(*args, **kwargs)
-
-        #self.fields['animals'] = args[0]['animals']
-        print("animal query: ", animal_query)
-        #self.fields['animals'] = animal_query
-
-        format_widgets(self)
-        print(self.fields)
-
-class OwnerForm_old(forms.ModelForm):
-    class Meta:
-        model= Owner
-        fields = ['name', 'address', 'phonenumber', 'email', 'other_info','animals', 'archive']
-        widgets = {'name': forms.TextInput(attrs={'required': True,}),
-                    'email': forms.EmailInput()}
-        save_after_object = ['animals']
-        labels = translate_labels(fields)
-
-
-
-    def __init__(self, *args, **kwargs):
-        owner = None
-
-        print(args)
-
-        if len(args) > 0:
-            owner = get_object(args[0].get('id', None),self.Meta.model)
-            args = (self.getArgsFromModel(owner),)
-            #django object to list
-            args[0]['animals'] = args[0]['animals'].all()
-            args[0]['pk'] = owner.pk
-            print("Owner animal list: ",args[0]['animals'])
-
-        super(OwnerForm, self).__init__(*args, **kwargs)
-        format_widgets(self)
-
-        print("Owner fields: ",self.fields)
-        #help(self.fields["animals"])
 
 class SpecieDescriptionForm(forms.ModelForm):
     class Meta:

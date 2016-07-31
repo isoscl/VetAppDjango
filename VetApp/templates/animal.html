@@ -1,27 +1,43 @@
 {% extends "site_base.html" %}
 
 {% block maincontent %}
-    <div>
-        {% if saved %}
-          <div class="alert alert-success">
-              <a href="#" class="close" data-dismiss="alert">x></a>
-              <strong> {{saved}} </strong>
-          </div>
-        {% endif %}
-        {% if animal_form.errors %}
-        <div class="alert alert-warning">
-            <a href="#" class="close" data-dismiss="alert">x</a>
-            <strong>Error!</strong>
-        </div>
-        {% endif %}
-        <form method="POST" form class="form-group">
-        {% csrf_token %}
-        <div class="form_group">
-        {{animal_form}}
-        </div>
-        <button class="btn btn-lg btn-primary " type="submit">Tallenna</button>
-        </form>
-        <!-- animal.form.name can set where it is located -->
-        <br>
-    </div>
+  <div>
+      <h2> Eläin </h2>
+      {% if animal_form.errors %}
+      <div class="alert alert-warning">
+          <a href="#" class="close" data-dismiss="alert">&times;</a>
+          {{animal_form.errors }}
+      </div>
+      {% endif %}
+
+      {% if animal_form.success %}
+      <div class="alert alert-success">
+        <strong>Tallennettu</strong> Muutokset on tallennettu.
+      </div>
+      {% endif%}
+
+      <form method="POST" id="ownerform" class="niceform">
+      {% csrf_token %}
+      <div class="form_group">
+      {{animal_form.id | safe}}
+      {{animal_form.name | safe}}
+      {{animal_form.official_name | safe}}
+      {{animal_form.birthday | safe}}
+      {{animal_form.micro_num | safe}}
+      {{animal_form.rec_num | safe}}
+      {{animal_form.tattoo | safe}}
+      {{animal_form.insurance | safe}}
+      {{animal_form.passport | safe}}
+      {{animal_form.other_info | safe}}
+      {{animal_form.death_day | safe}}
+      {{animal_form.archive | safe}}
+      {{animal_form.specie | safe}}
+      {{animal_form.sex | safe}}
+      {{animal_form.race | safe}}
+      {{animal_form.color | safe}}
+
+      </div>
+      <button class="btn btn-lg btn-primary " type="button" onclick="submitForm('owner')">Tallenna</button>
+      </form>
+  </div>
 {% endblock %}

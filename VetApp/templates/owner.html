@@ -2,23 +2,20 @@
 
 {% block maincontent %}
 
-  <!-- <script>
-    //This is sort of hax to get multiselect work like table
-    window.onload = function() {
-      document.getElementById('ownerform').onsubmit = function() {
-        $('#id_animals option').prop('selected', true);
-      };
-    }
-  </script> -->
-
     <div>
         <h2> Omistaja </h2>
         {% if owner_form.errors %}
         <div class="alert alert-warning">
             <a href="#" class="close" data-dismiss="alert">&times;</a>
-            {{owner_form.errors}}
+            {{owner_form.errors }}
         </div>
         {% endif %}
+
+        {% if owner_form.success %}
+        <div class="alert alert-success">
+          <strong>Tallennettu</strong> Muutokset on tallennettu.
+        </div>
+        {% endif%}
 
         <form method="POST" id="ownerform" class="niceform">
         {% csrf_token %}

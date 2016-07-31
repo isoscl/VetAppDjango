@@ -1,12 +1,31 @@
 {% extends "site_base.html" %}
 
 {% block maincontent %}
-    <div>
-        <h2> Eläinlääkäri </h2>
-        <form method="POST" form class="form-group">
-        {% csrf_token %}
-        {{vet_form}}
-        <button class="btn btn-lg btn-primary " type="submit">Tallenna</button>
-        </form>
-    </div>
+
+  <div>
+      <h2> Eläinlääkäri </h2>
+      {% if vet_form.errors %}
+      <div class="alert alert-warning">
+          <a href="#" class="close" data-dismiss="alert">&times;</a>
+          {{vet_form.errors }}
+      </div>
+      {% endif %}
+
+      {% if vet_form.success %}
+      <div class="alert alert-success">
+        <strong>Tallennettu</strong> Muutokset on tallennettu.
+      </div>
+      {% endif%}
+
+      <form method="POST" id="ownerform" class="niceform">
+      {% csrf_token %}
+      <div class="form_group">
+      {{vet_form.id | safe}}
+      {{vet_form.vet_number | safe}}
+
+      </div>
+      <button class="btn btn-lg btn-primary " type="button" onclick="submitForm('owner')">Tallenna</button>
+      </form>
+  </div>
+
 {% endblock %}
