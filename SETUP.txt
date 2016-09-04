@@ -1,0 +1,10 @@
+
+
+#To run app
+python3 manage.py runserver
+
+#if you deleted database run:
+python3 manage.py makemigrations
+python3 manage.py migrate
+python3 manage.py makemigrations VetApp
+python3 manage.py migrate VetApp

@@ -1,9 +1,44 @@
 from django.db import models
 from django.contrib.auth.models import User
-
-from VetApp.items import *
+from VetApp.translate import g_count_type_list
+import VetApp
 from datetime import datetime
 
+__all__ = ['Vet', 'PostOffice', 'Animal', 'Operation', 'VisitAnimal', 'Visit',
+'VisitItems', 'Owner', 'Bill', 'Color', 'Sex', 'Specie', 'Race',
+'Item', 'ItemBase', 'SpecieDescription']
+
+g_avl_dict = {'Item':24,'Medicine':10,'Vaccine':10,'Feed':14,'Drug':10}
+
+
+__all__ = ['SpecieDescription','Item']
+
+
+class SpecieDescription(models.Model):
+    specie = models.ForeignKey('Specie', on_delete=models.CASCADE)
+    text = models.TextField(max_length=1000)
+
+def get_item_alv(item):
+    return g_avl_dict[item.item_type]
+
+class ItemBase(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(max_length=1000, blank=True)
+    stock_price = models.DecimalField(max_digits=9, decimal_places=2, default=0.00)
+    price = models.DecimalField(max_digits=9, decimal_places=2)
+    barcode = models.CharField(max_length=100, blank=True)
+    count_type = models.CharField(max_length=10, choices=g_count_type_list, default='pcs')
+    archive = models.BooleanField(default=False)
+    specie_description = models.ManyToManyField(SpecieDescription)
+    item_type = models.CharField(max_length=20, default='Item')
+
+
+class Item(models.Model):
+    base = models.ForeignKey('ItemBase', on_delete=models.CASCADE)
+    count = models.DecimalField(max_digits=9, decimal_places=2, default=0.00)
+
+    def table_header_string_list(self=None):
+        return ['pk', 'base', 'count']
 
 def clean_str(_str):
     return '' if _str is None else str(_str)
@@ -15,8 +50,8 @@ def model_to_dict(model):
     return_dict['type'] = model.__class__.__name__
     return return_dict
 
-__all__ = ['Vet', 'PostOffice', 'Animal', 'Operation', 'VisitAnimal', 'Visit',
-'VisitItems', 'Owner', 'Bill', 'Color', 'Sex', 'Specie', 'Race']
+
+
 
 class Vet(models.Model):
     #user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -93,13 +128,8 @@ class VisitAnimal(models.Model):
     diagnosis = models.CharField(max_length=1000, blank=True)
     treatment = models.CharField(max_length=1000, blank=True)
 
-    #readonly_fields=('animal',)
-
-    # class Meta:
-    #     ordering = ["animal"]
-
-    def getText(self=None):
-        return 'visitAnimal'
+    def table_header_string_list(self=None):
+        return ['pk', 'animal']
 
 class Visit(models.Model):
     visit_reason = models.CharField(max_length=1000, blank=True)
@@ -109,8 +139,8 @@ class Visit(models.Model):
     vet = models.ForeignKey('Vet', on_delete=models.CASCADE)
     owner = models.ForeignKey('Owner', on_delete=models.CASCADE)
 
-    visitanimals = models.ManyToManyField(VisitAnimal, blank=True, null=True)
-    items = models.ManyToManyField(Item, through="VisitItems", blank=True, null=True)
+    visitanimals = models.ManyToManyField(VisitAnimal, blank=True)
+    items = models.ManyToManyField(Item, through="VisitItems", blank=True)
 
     archive = models.BooleanField(default=False)
     def getText(self=None):
