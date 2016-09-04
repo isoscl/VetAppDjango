@@ -11,9 +11,6 @@ __all__ = ['Vet', 'PostOffice', 'Animal', 'Operation', 'VisitAnimal', 'Visit',
 g_avl_dict = {'Item':24,'Medicine':10,'Vaccine':10,'Feed':14,'Drug':10}
 
 
-__all__ = ['SpecieDescription','Item']
-
-
 class SpecieDescription(models.Model):
     specie = models.ForeignKey('Specie', on_delete=models.CASCADE)
     text = models.TextField(max_length=1000)
@@ -34,11 +31,11 @@ class ItemBase(models.Model):
 
 
 class Item(models.Model):
-    base = models.ForeignKey('ItemBase', on_delete=models.CASCADE)
-    count = models.DecimalField(max_digits=9, decimal_places=2, default=0.00)
+     base = models.ForeignKey('ItemBase', on_delete=models.CASCADE)
+     count = models.DecimalField(max_digits=9, decimal_places=2, default=0.00)
 
-    def table_header_string_list(self=None):
-        return ['pk', 'base', 'count']
+     def table_header_string_list(self=None):
+         return ['pk', 'name', 'count']
 
 def clean_str(_str):
     return '' if _str is None else str(_str)

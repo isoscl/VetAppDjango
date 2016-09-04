@@ -7,7 +7,6 @@ from VetApp.translate import g_login_text, g_form_labels, g_form_placeholders,g_
 
 from VetApp import models
 from VetApp.models import *
-from VetApp.items import *
 
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -166,94 +165,68 @@ class MoneyInput(forms.widgets.NumberInput):
         super(MoneyInput, self).__init__(*args, **kwargs)
 
 class ItemForm(forms.ModelForm):
-    class Meta:
-        model=Item
-        fields=['name', 'description', 'stock_price', 'price',
-        'barcode', 'count_type', 'archive']
-        widgets =  {'name': forms.TextInput(attrs={'required': True,}),
-                    'description': forms.Textarea(attrs={'rows': 5,}),
-                    'stock_price':MoneyInput(), 'price':MoneyInput()}
-        labels = translate_labels(fields)
-
     def __init__(self, *args, **kwargs):
-        super(ItemForm, self).__init__(*args, **kwargs)
-        format_widgets(self)
+        print('Type: ',type(self), ": args: ", args, ' kwargs: ', kwargs)
+        _form_generic_init(self, args=args)
 
 class VisitAnimalForm(forms.ModelForm):
-    class Meta:
-        model=VisitAnimal
-        fields=['animal', 'operations', 'items','anamnesis',
-                'status','diagnosis','treatment']
-        widgets={'animal': forms.HiddenInput(),
-                'anamnesis':forms.Textarea(attrs={'rows': 2,}),
-                'status':forms.Textarea(attrs={'rows': 2,}),
-                'diagnosis':forms.Textarea(attrs={'rows': 2,}),
-                'treatment':forms.Textarea(attrs={'rows': 2,})}
-        labels = translate_labels(fields)
-
-    def __init__(self, *args, **kwargs):
-        print('VisitAnimalForm: args',args,' kwargs: ',kwargs)
-        #never give args for parent TODO: check if this is correct
-        #convert animal object to int presenting it pk
-        animal = None
-        if len(args) > 0:
-            animal = args[0].get('animal', None)
-            if animal and not (type(animal) is int):
-                args[0]['animal'] = animal.pk
-
-        super(VisitAnimalForm, self).__init__(*args, **kwargs)
-        format_widgets(self)
-        if animal:
-            self.animal_pk = animal.pk
-            self.animal_text = str(animal)
+        def __init__(self, *args, **kwargs):
+            print('Type: ',type(self), ": args: ", args, ' kwargs: ', kwargs)
+            _form_generic_init(self, args=args,
+            table_options={'operations':{
+                'name':'',
+                'link':True,
+                'delete': True,
+                'add':True
+            },'items':{
+                'name':'',
+                'link':True,
+                'delete': True,
+                'add':True
+            }})
 
 class VetForm(forms.ModelForm):
-    class Meta:
-        model=Vet
-        fields = ['vet_number']
-        labels = translate_labels(fields)
-
     def __init__(self, *args, **kwargs):
-        super(VetForm, self).__init__(*args, **kwargs)
-        format_widgets(self)
+        print('Type: ',type(self), ": args: ", args, ' kwargs: ', kwargs)
+        _form_generic_init(self, args=args)
 
-
-class VisitItemForm(forms.Form):
-    # class Meta:
-    #     fields = ['name', 'count']
-    pk = forms.CharField(widget=forms.HiddenInput(),required=False)
-    item_pk = forms.CharField(widget=forms.HiddenInput())
-    count = forms.DecimalField()
-
-    def __fill_item_data(self,item):
-        if item:
-            self.item_pk = item.pk
-            self.item_name = item.name
-            self.item_price = item.price
-            return True
-        else:
-            print("VisitItemForm.__fill_item_data. item is None!")
-            return False
-
-    def __init__(self, *args, **kwargs):
-        print('VisitItemForm: ', args , 'kwargs', kwargs)
-        visititem = kwargs.pop('instance', None)
-        if visititem:
-            self.__fill_item_data(visititem.item)
-            args = ({'pk':visititem.pk,'item_pk':visititem.item.pk,
-            'count':visititem.count},)
-        else:
-            if len(args) > 0:
-                item = args[0].get('item')
-                count = args[0].get('count', 1)
-                self.__fill_item_data(item)
-                args = ({'pk':None,'item_pk':item.pk,
-                'count':count},)
-            else:
-                print('VisitItemForm args length is zero!')
-
-        super(VisitItemForm, self).__init__(*args, **kwargs)
-
+#
+# class VisitItemForm(forms.Form):
+#     # class Meta:
+#     #     fields = ['name', 'count']
+#     pk = forms.CharField(widget=forms.HiddenInput(),required=False)
+#     item_pk = forms.CharField(widget=forms.HiddenInput())
+#     count = forms.DecimalField()
+#
+#     def __fill_item_data(self,item):
+#         if item:
+#             self.item_pk = item.pk
+#             self.item_name = item.name
+#             self.item_price = item.price
+#             return True
+#         else:
+#             print("VisitItemForm.__fill_item_data. item is None!")
+#             return False
+#
+#     def __init__(self, *args, **kwargs):
+#         print('VisitItemForm: ', args , 'kwargs', kwargs)
+#         visititem = kwargs.pop('instance', None)
+#         if visititem:
+#             self.__fill_item_data(visititem.item)
+#             args = ({'pk':visititem.pk,'item_pk':visititem.item.pk,
+#             'count':visititem.count},)
+#         else:
+#             if len(args) > 0:
+#                 item = args[0].get('item')
+#                 count = args[0].get('count', 1)
+#                 self.__fill_item_data(item)
+#                 args = ({'pk':None,'item_pk':item.pk,
+#                 'count':count},)
+#             else:
+#                 print('VisitItemForm args length is zero!')
+#
+#         super(VisitItemForm, self).__init__(*args, **kwargs)
+#
 
 class VisitForm(object):
     def __init__(self, *args, **kwargs):
@@ -735,14 +708,9 @@ class OwnerForm(object):
         }})
 
 class SpecieDescriptionForm(forms.ModelForm):
-    class Meta:
-        model = SpecieDescription
-        fields = ['text']
-        labels = translate_labels(fields)
-
     def __init__(self, *args, **kwargs):
-        super(SpecieDescriptionForm, self).__init__(*args, **kwargs)
-        format_widgets(self)
+        print('Type: ',type(self), ": args: ", args, ' kwargs: ', kwargs)
+        _form_generic_init(self, args=args)
 
 #self.fields['pk'] = forms.IntegerField(widget = forms.HiddenInput(),
 #required=False, initial=_pk)
@@ -790,44 +758,24 @@ class SpecieDescriptionForm(forms.ModelForm):
 #
 
 class SexForm(forms.ModelForm):
-    class Meta:
-        model = Sex
-        fields = ['name']
-        labels = translate_labels(fields)
-
     def __init__(self, *args, **kwargs):
-        super(SexForm, self).__init__(*args, **kwargs)
-        format_widgets(self)
+        print('Type: ',type(self), ": args: ", args, ' kwargs: ', kwargs)
+        _form_generic_init(self, args=args)
 
 class ColorForm(forms.ModelForm):
-    class Meta:
-        model = Color
-        fields = ['name']
-        labels = translate_labels(fields)
-
     def __init__(self, *args, **kwargs):
-        super(ColorForm, self).__init__(*args, **kwargs)
-        format_widgets(self)
+        print('Type: ',type(self), ": args: ", args, ' kwargs: ', kwargs)
+        _form_generic_init(self, args=args)
 
 class SpecieForm(forms.ModelForm):
-    class Meta:
-        model = Specie
-        fields = ['name']
-        labels = translate_labels(fields)
-
     def __init__(self, *args, **kwargs):
-        super(SpecieForm, self).__init__(*args, **kwargs)
-        format_widgets(self)
+        print('Type: ',type(self), ": args: ", args, ' kwargs: ', kwargs)
+        _form_generic_init(self, args=args)
 
 class RaceForm(forms.ModelForm):
-    class Meta:
-        model = Race
-        fields = ['name']
-        labels = translate_labels(fields)
-
     def __init__(self, *args, **kwargs):
-        super(RaceForm, self).__init__(*args, **kwargs)
-        format_widgets(self)
+        print('Type: ',type(self), ": args: ", args, ' kwargs: ', kwargs)
+        _form_generic_init(self, args=args)
 
 class AuthForm(AuthenticationForm):
     pass
